@@ -24,7 +24,42 @@ jobs:
       - run: uv run --frozen ruff check .
       - run: uv run --frozen ruff format --check .
       - run: uv run --frozen python scripts/export_schema.py --check
-      - run: uv run --frozen pytest -q
+      - name: Run tests and report failing test IDs
+        shell: bash
+        run: |
+          set +e
+          uv run --frozen pytest -q --junitxml=/tmp/infralens-pytest.xml
+          test_status=$?
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            python - /tmp/infralens-pytest.xml "$GITHUB_STEP_SUMMARY" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          report_path, summary_path = sys.argv[1:]
+          failures = []
+          try:
+              root = ET.parse(report_path).getroot()
+          except (OSError, ET.ParseError):
+              failures.append(("pytest report unavailable", "see authenticated job logs"))
+          else:
+              for case in root.iter("testcase"):
+                  problem = case.find("failure")
+                  if problem is None:
+                      problem = case.find("error")
+                  if problem is not None:
+                      nodeid = f"{case.get('classname', '')}::{case.get('name', 'unknown')}"
+                      failures.append((nodeid, problem.get("type", "test failure")))
+
+          with open(summary_path, "a", encoding="utf-8") as summary:
+              summary.write("## Pytest failures\n\n")
+              for nodeid, kind in failures:
+                  summary.write(f"- `{nodeid}` ({kind})\n")
+          for nodeid, kind in failures[:10]:
+              print(f"::error title=pytest failure::{nodeid} ({kind})")
+          PY
+          fi
+          exit "$test_status"
       - run: uv run --frozen python -m build
 
   systemd-capability:
