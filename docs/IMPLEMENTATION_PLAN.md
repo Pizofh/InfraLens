@@ -1,7 +1,7 @@
 # Plan incremental para Luna
 
 Cada fila es una tarea separada y revisable. No implementar todo en una sola entrega.
-T00–T05 están completos; los checks de filas posteriores son requisitos futuros.
+T00–T07 están completos; los checks de filas posteriores son requisitos futuros.
 
 | ID / dependencia | Objetivo y componentes | Cambios esperados | Pruebas / aceptación | Riesgo o decisión resuelta |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@ T00–T05 están completos; los checks de filas posteriores son requisitos futur
 | T04c / T04a — completo | host.py interfaces | net_if_addrs/net_if_stats, IPs/prefijos canónicos, zonas IPv6 y máximo 256 | 6 pruebas: IP/máscara/zona, error independiente de cada fuente, zona no resuelta, dirección inválida y límite truncado | Se omiten familias no IP/MAC; sin inferir exposición |
 | T05 / T03,T04a — completo | processes.py | PID, create_time, nombre y UID observables; límite 10.000; fallos por campo y carrera conservan datos | 6 pruebas: campos/evidencia ordenados, desaparición, permiso UID, iterator denegado, truncamiento y canarios de datos prohibidos | Sólo lectura; no argv/env/cwd/open_files; PID no es identidad entre scans |
 | T06 / T05 — completo | sockets.py | TCP LISTEN/UDP bound, IPv4/IPv6 y relación owned_by revalidada; límite 20.000 y presupuesto IPC | 7 pruebas unitarias + listener Linux real: filtros, PID null/reutilizado, permisos, zona IPv6, truncamiento y cierre | Sin conexiones salientes; visibilidad sin root siempre parcial |
-| T07 / T03,T05 | systemd.py | Detección de capacidad, list-units/show allowlist, main_process verificado | C07; fixtures y C14 en host capaz antes de declarar soporte | Cargadas no equivale a todas instaladas; sin bus no se oculta error |
+| T07 / T03,T05 — completo | systemd.py | Detección de capacidad/runtime, servicios cargados, propiedades allowlisted y MainPID revalidado | 6 pruebas: unsupported, manager desconectado, allowlist/redacción, PID 0/malformado, vínculo estable/carrera y límite | C14 real aún no verificada; unidades cargadas no equivalen a todas instaladas |
 | T08 / T04b,T07 | assessment.py | FS_USAGE_HIGH, SYSTEMD_FAILED, evaluaciones y referencias | C08: límite 90%, negativos, no evaluables y cobertura parcial por objeto | No health score ni puertos como riesgo |
 | T09 / T01,T08 | reporting.py | JSON 0600, validación, atomicidad, resumen y escape de controles | C09/C11, no sobrescritura por carrera, error de espacio/permisos | Directorio hostil fuera de alcance; no dump arbitrario |
 | T10 / T04c,T06,T07,T09 | cli/scan integración | Conectar implementación, códigos, interrupción, límites | A1–A9, C12/C13; medir memoria/tiempo/tamaño, scan no root | No añadir flags fuera de spec para resolver bugs |

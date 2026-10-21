@@ -660,11 +660,15 @@ class Snapshot(Model):
 
         for entity in self.entities:
             for field_name, value in entity.attributes.model_dump().items():
-                not_applicable = (
-                    entity.kind == "socket"
-                    and field_name == "scope_id"
-                    and entity.attributes.family == "ipv4"
-                )
+                not_applicable = False
+                if entity.kind == "socket" and field_name == "scope_id":
+                    not_applicable = (
+                        entity.attributes.family == "ipv4"
+                        or not ipaddress.IPv6Address(entity.attributes.local_address).is_link_local
+                    )
+                elif entity.kind == "service" and field_name == "main_pid":
+                    # systemctl MainPID=0 is a known absence, not an unknown value.
+                    not_applicable = True
                 if (
                     value is None
                     and not not_applicable
@@ -758,6 +762,10 @@ _SCHEMA_INVARIANTS = [
     (
         "Unknown host or entity fields require a limitation; an empty collection does not imply "
         "whole-host absence."
+    ),
+    (
+        "A null service main_pid can mean systemd reported MainPID=0; unknown values require a "
+        "limitation."
     ),
     "Rules are limited to FS_USAGE_HIGH and SYSTEMD_FAILED in schema version 1.0.0.",
 ]

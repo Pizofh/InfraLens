@@ -178,6 +178,86 @@ def test_host_metadata_can_have_direct_evidence(partial_snapshot: dict[str, Any]
     assert snapshot.evidence[-1].subject_id == "host"
 
 
+def test_systemd_main_pid_zero_is_a_known_null_value() -> None:
+    path = FIXTURE.with_name("snapshot_process_socket.json")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    collector = next(item for item in payload["collectors"] if item["id"] == "systemd")
+    collector.update(
+        status="ok",
+        coverage="complete",
+        entity_ids=["service:1"],
+        evidence_ids=["e:4", "e:5"],
+        errors=[],
+        limitations=[],
+    )
+    payload["entities"].append(
+        {
+            "id": "service:1",
+            "kind": "service",
+            "attributes": {
+                "name": "api.service",
+                "load_state": "loaded",
+                "active_state": "inactive",
+                "sub_state": "dead",
+                "main_pid": None,
+            },
+            "evidence_ids": ["e:4", "e:5"],
+        }
+    )
+    payload["evidence"].extend(
+        [
+            {
+                "id": "e:4",
+                "collector_id": "systemd",
+                "collected_at": payload["started_at"],
+                "source": {"type": "command", "name": "systemctl.list-units"},
+                "subject_id": "service:1",
+                "claim": "observed",
+                "fields": {"name": "api.service"},
+                "limitations": [],
+            },
+            {
+                "id": "e:5",
+                "collector_id": "systemd",
+                "collected_at": payload["started_at"],
+                "source": {"type": "command", "name": "systemctl.show"},
+                "subject_id": "service:1",
+                "claim": "observed",
+                "fields": {
+                    "name": "api.service",
+                    "load_state": "loaded",
+                    "active_state": "inactive",
+                    "sub_state": "dead",
+                    "main_pid": None,
+                },
+                "limitations": [],
+            },
+        ]
+    )
+    payload["assessment"] = [
+        item
+        for item in payload["assessment"]
+        if not (item["rule_id"] == "SYSTEMD_FAILED" and item["subject_id"] is None)
+    ]
+    payload["assessment"].append(
+        {
+            "rule_id": "SYSTEMD_FAILED",
+            "rule_version": "1.0.0",
+            "subject_id": "service:1",
+            "state": "not_triggered",
+            "finding_id": None,
+            "reason_code": None,
+        }
+    )
+
+    snapshot = Snapshot.model_validate(payload)
+
+    assert (
+        next(item for item in snapshot.entities if item.kind == "service").attributes.main_pid
+        is None
+    )
+
+
 def test_host_evidence_must_match_observed_host_fields(partial_snapshot: dict[str, Any]) -> None:
     partial_snapshot["collectors"][0]["evidence_ids"].append("e:2")
     partial_snapshot["evidence"].append(

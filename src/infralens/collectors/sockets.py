@@ -131,6 +131,13 @@ def collect(context: Mapping[str, object]) -> SocketCollectionResult:
             )
 
         if attributes.pid is None:
+            limitations.append(
+                Limitation(
+                    code="socket_pid_unavailable",
+                    message="Socket owner PID was not observable.",
+                    subject_id=entity_id,
+                )
+            )
             continue
         process = process_entities.get(attributes.pid)
         if process is None or process.attributes.started_at is None:

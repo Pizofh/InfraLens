@@ -1422,6 +1422,7 @@
     "Entity, evidence, relation, assessment, and finding references resolve consistently within this snapshot.",
     "Evidence fields equal the observed attributes of their host or entity subject; evidence is not raw command output.",
     "Unknown host or entity fields require a limitation; an empty collection does not imply whole-host absence.",
+    "A null service main_pid can mean systemd reported MainPID=0; unknown values require a limitation.",
     "Rules are limited to FS_USAGE_HIGH and SYSTEMD_FAILED in schema version 1.0.0."
   ]
 }

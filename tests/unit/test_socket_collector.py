@@ -78,7 +78,7 @@ def test_collect_filters_normalizes_and_links_verified_process(monkeypatch) -> N
     assert result.relations[0].to_id == "process:1"
     assert result.relations[0].evidence_ids == result.entities[0].evidence_ids
     assert result.collector.status == "ok"
-    assert result.collector.coverage == "complete"
+    assert result.collector.coverage == "partial"
 
 
 def test_reused_pid_does_not_create_ownership_relation(monkeypatch) -> None:

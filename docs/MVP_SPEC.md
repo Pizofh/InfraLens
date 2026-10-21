@@ -1,9 +1,10 @@
 # Especificación normativa MVP 0.1
 
 Los MUST de recolección de esta especificación son criterios de aceptación
-pendientes; T00–T06 implementan CLI, contrato, runner, supervisor y collectors aislados
-de OS, recursos, contexto, filesystems, interfaces, procesos y sockets. Los demás colectores aún
-no están conectados; `scan` sigue siendo un placeholder. Plataforma objetivo Linux
+pendientes; T00–T07 implementan CLI, contrato, runner, supervisor y collectors aislados
+de OS, recursos, contexto, filesystems, interfaces, procesos, sockets y servicios
+systemd. Assessment e integración aún no están conectados; `scan` sigue siendo un
+placeholder. Plataforma objetivo Linux
 con Python 3.12; primera validación Ubuntu 24.04. RHEL 9 y WSL2 requieren pruebas
 explícitas.
 

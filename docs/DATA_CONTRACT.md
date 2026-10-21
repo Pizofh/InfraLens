@@ -80,7 +80,10 @@ confirmada. IPs normalizadas con ipaddress; IPv6 incluye scope_id separado si ex
 (zona local opcional en socket/address). No convertir wildcard IPv6 en IPv4.
 Prefijos desconocidos son null. No excluir loopback o tmpfs silenciosamente: declarar
 que disk_partitions(all=False) tiene su propio filtro y no es censo de mounts.
-Campos nulos llevan limitación con subject_id y nombre de campo en el mensaje.
+Campos nulos llevan limitación con subject_id y nombre de campo en el mensaje,
+salvo campos semánticamente no aplicables: scope_id en IPv4 y main_pid cuando
+systemd observó MainPID=0. Si main_pid es null por error o dato inaccesible sí hay
+limitación.
 T04b ordena los montajes por mountpoint, dispositivo y tipo, asigna IDs locales
 deterministas y limita el resultado a 256. Por cada filesystem hay evidencia de
 `psutil.disk_partitions`; si usage se lee, otra evidencia `psutil.disk_usage` contiene
@@ -113,6 +116,14 @@ procesos contiene ese PID con `started_at`, y `psutil.Process(pid).create_time()
 la lectura de sockets coincide exactamente con ese inicio. PID ausente, desconocido,
 denegado, desaparecido o reutilizado no crea una relación; se registra una limitación.
 Sin privilegios root la visibilidad de sockets siempre es parcial, incluso con datos.
+T07 considera systemd `unsupported` sólo cuando falta el ejecutable o el marker del
+manager `/run/systemd/system`; si el runtime existe y list-units falla, guarda error
+saneado y estado parcial/none. El listado de unidades sólo aporta el primer token
+de cada fila; `show` solicita únicamente Id, LoadState, ActiveState, SubState y MainPID.
+MainPID=0 se normaliza a null como ausencia conocida de proceso. MainPID desconocido
+lleva limitación. Para `main_process`, el segundo `show` debe repetir la misma unidad,
+MainPID y estados; luego create_time del proceso debe coincidir con el inventario
+previo. Nunca se incluyen Description, Environment, ExecStart ni stderr.
 
 IDs de entidades y evidencia no son identidades entre snapshots. Un proceso se
 identifica sólo durante el scan por pid+started_at+contexto de arranque; sin tiempo
