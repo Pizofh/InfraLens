@@ -101,6 +101,18 @@ con los demás campos observados cuando una lectura posterior falla. `started_at
 normaliza a UTC; nombre y UID nulos llevan limitación por entidad. El límite de 10.000
 entradas marca truncamiento y ordena las entidades finales por PID. La evidencia usa
 `psutil.process_iter` y sólo repite los escalares observados de la entidad.
+T06 conserva sólo TCP `LISTEN` y UDP con estado local `NONE` (bound); descarta
+conexiones TCP salientes y otras familias. Normaliza IP/puerto, deduplica registros y
+ordena por protocolo, familia, dirección, puerto, PID y zona. Una dirección IPv6
+link-local sin zona mantiene `scope_id: null` con limitación. El máximo es 20.000 y
+el resultado se recorta además a 7 MiB para respetar el límite IPC del worker; ambos
+casos fijan `truncated` y cobertura parcial.
+
+Una relación `owned_by` sólo se emite si el socket trae PID, el inventario previo de
+procesos contiene ese PID con `started_at`, y `psutil.Process(pid).create_time()` tras
+la lectura de sockets coincide exactamente con ese inicio. PID ausente, desconocido,
+denegado, desaparecido o reutilizado no crea una relación; se registra una limitación.
+Sin privilegios root la visibilidad de sockets siempre es parcial, incluso con datos.
 
 IDs de entidades y evidencia no son identidades entre snapshots. Un proceso se
 identifica sólo durante el scan por pid+started_at+contexto de arranque; sin tiempo

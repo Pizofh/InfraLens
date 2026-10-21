@@ -25,9 +25,9 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 ## Estructura objetivo del MVP; implementar por tarea
 
-T00–T05 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
-collector host aislado y collector mínimo de procesos. Sockets y el flujo completo
-pertenecen a T06–T10; no adelantar módulos de tareas posteriores.
+T00–T06 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
+collectors host, procesos y sockets aislados. Servicios y el flujo completo pertenecen
+a T07–T10; no adelantar módulos de tareas posteriores.
 
 ```text
 pyproject.toml
@@ -98,7 +98,7 @@ restante. Un scan de 30 s admite hasta 2 s adicionales de limpieza controlada.
 | Filesystems | psutil disk_partitions(all=False), disk_usage | dispositivo, mountpoint, tipo, bytes total/usados/libres | 256 montajes; fallo por montaje se conserva |
 | Interfaces | psutil net_if_addrs/net_if_stats | nombre, estado, direcciones IP y prefijo | 256 interfaces; sin MAC por defecto |
 | Procesos | psutil process_iter | pid, create_time, name, uid si accesible | 10.000 entradas; sin argv/env/cwd/open_files |
-| Sockets | psutil net_connections(kind='inet') | TCP LISTEN y UDP local ligado, IP/puerto, pid opcional | 20.000 entradas; sin conexiones salientes |
+| Sockets | psutil net_connections(kind='inet') | TCP LISTEN y UDP local ligado, IP/puerto, pid opcional | 20.000 entradas; resultado <=7 MiB para IPC; sin conexiones salientes |
 | Servicios | systemctl list-units --type=service --all --plain --no-legend --no-pager; show | id, LoadState, ActiveState, SubState, MainPID | 2.000 unidades; propiedades acotadas y lotes |
 
 systemd: comprobar ejecutable y `/run/systemd/system`; si hay runtime pero falla
@@ -114,8 +114,10 @@ el resultado de sockets sin privilegios es siempre partial con motivo
 Incluso con root la cobertura se refiere al namespace y al intervalo, no a un host
 atómico. Las listas no son transaccionales: registrar tiempos por colector.
 
-Relaciones 0.1: socket owned_by proceso y service main_process proceso. Se marca
-observed sólo si PID y create_time coinciden en lecturas antes/después del vínculo;
+Relaciones 0.1: socket owned_by proceso y service main_process proceso. Para socket,
+el create_time del inventario de procesos anterior actúa como lectura previa; después
+de net_connections se relee create_time para el PID. Se marca observed sólo si PID y
+create_time coinciden en ambas observaciones;
 para MainPID, releer también MainPID y estado de unidad. Si hay carrera, omitir
 relación y registrar limitación. No garantizar identidad con sólo un PID. No deducir
 aplicación, topología ni dependencia funcional. Conexiones salientes se posponen.
