@@ -28,7 +28,7 @@ jobs:
       - run: uv run --frozen python -m build
 
   systemd-capability:
-    name: Optional real-systemd capability (C14)
+    name: Real systemd integration (C14)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -36,5 +36,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --frozen --extra dev
-      - name: Run C14 where a systemd manager is available
-        run: uv run --frozen pytest -q tests/integration/test_systemd_real.py -m systemd
+      - name: Require a real systemd manager
+        run: |
+          test -d /run/systemd/system
+          sudo systemctl show --property=Version --value
+          command -v systemd-run
+          command -v false
+      - name: Run C14 as root
+        run: sudo "$(command -v uv)" run --frozen pytest -q -rs tests/integration/test_systemd_real.py -m systemd
