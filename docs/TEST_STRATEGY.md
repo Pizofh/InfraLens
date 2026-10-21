@@ -3,7 +3,8 @@
 ## Estado y presupuesto
 
 Este documento prescribe pruebas futuras para las capacidades todavía no
-implementadas. T00–T10 tienen una suite ejecutada de 100 pruebas; cubre CLI, modelos,
+implementadas. T00–T11 tienen 101 casos: 100 pasan y C14 queda omitida explícitamente
+porque este entorno no tiene manager systemd. La suite cubre CLI, modelos,
 contrato, schema, runner, supervisor y collector host aislado (OS, recursos, contexto,
 filesystems, interfaces, procesos, sockets y systemd), assessment de las dos reglas,
 persistencia JSON privada/atómica, resumen terminal saneado e integración CLI no root.
@@ -62,7 +63,7 @@ Harness de prueba, fuera del producto, puede necesitar privilegios específicos.
 finally limpia únicamente su unidad y verifica limpieza; nunca elevar InfraLens.
 Probar también estado inactive normal para impedir falso positivo failed.
 
-## CI propuesta para Luna
+## CI automatizada
 
 1. Crear venv, resolver dependencias en lock revisable, instalar con modo frozen.
 2. `ruff check .`, `ruff format --check .`.
@@ -71,8 +72,10 @@ Probar también estado inactive normal para impedir falso positivo failed.
    desde fuera del checkout. Verificar JSON y código documentado.
 5. Job systemd separado en runner adecuado; no asumir PID1 por usar Ubuntu runner.
 
-Son comandos objetivo para la implementación, no comandos que ya puedan ejecutarse.
-Los markers `integration`, `systemd` y `docker` ya están definidos en T00. En cada
+Estos checks se ejecutan en `.github/workflows/ci.yml` con Ubuntu 24.04 y Python 3.12.
+El job de systemd es independiente: ejecuta C14 cuando el entorno tiene manager
+systemd y harness root-capable; pytest informa skip con motivo explícito si no.
+Los markers `integration`, `systemd` y `docker` ya están definidos. En cada
 entrega Luna reporta conteos passed/failed/skipped; cero tests no
 valida nada. Subir a CI sólo fixtures saneadas; nunca artifacts de scan real por
 defecto. Linux RHEL sólo se declara probado después de una ejecución real, con

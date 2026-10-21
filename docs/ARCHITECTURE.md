@@ -27,7 +27,8 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 T00–T10 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
 collectors host, procesos, sockets, systemd aislado, reglas puras de assessment y
-reporting seguro y flujo completo de scan. T11 queda para CI y documentación final.
+reporting seguro, flujo completo de scan y CI base. C14 requiere una validación
+posterior en un entorno con manager systemd real.
 
 ```text
 pyproject.toml

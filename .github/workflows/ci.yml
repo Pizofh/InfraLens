@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_LINK_MODE: copy
+
+jobs:
+  checks:
+    name: Checks (Ubuntu, Python 3.12)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen --extra dev
+      - run: uv run --frozen ruff check .
+      - run: uv run --frozen ruff format --check .
+      - run: uv run --frozen python scripts/export_schema.py --check
+      - run: uv run --frozen pytest -q
+      - run: uv run --frozen python -m build
+
+  systemd-capability:
+    name: Optional real-systemd capability (C14)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen --extra dev
+      - name: Run C14 where a systemd manager is available
+        run: uv run --frozen pytest -q tests/integration/test_systemd_real.py -m systemd
