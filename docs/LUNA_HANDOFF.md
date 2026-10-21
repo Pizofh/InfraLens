@@ -6,9 +6,9 @@ T00–T11 ya están implementadas: bootstrap, schema/validación del snapshot, r
 supervisor de workers, collectors host, procesos, sockets, systemd y reglas puras de
 assessment, reporting JSON seguro, integración CLI, CI y documentación de uso.
 C14 también pasó en GitHub Actions sobre Ubuntu con systemd real. D01 añade
-`load_snapshot`; D02 añade `preflight_comparison` para exigir scope y contexto
-compatibles. La siguiente tarea es D03: definir claves naturales y matching de
-servicios cargados.
+`load_snapshot`, D02 añade `preflight_comparison`, y D03 empareja servicios por nombre
+sin usar IDs locales. La siguiente tarea es D04: matching de listeners por la clave
+protocol/family/address/port/zone.
 Para cualquier cambio, consulta [brief](PROJECT_BRIEF.md), [MVP](MVP_SPEC.md),
 [contrato](DATA_CONTRACT.md) y [plan](IMPLEMENTATION_PLAN.md). Inspecciona Git status
 e instrucciones locales.
@@ -20,7 +20,7 @@ CI con systemd real y el CLI produce snapshots reales locales.
 
 ## Orden restante
 
-D01 y D02 están completos. Seguir D03 → D04 → D05 para diff conservador; no implementes
+D01, D02 y D03 están completos. Seguir D04 → D05 para diff conservador; no implementes
 transportes SSH ni Docker por adelantado. No solicites confirmación para decisiones
 ya resueltas en estos documentos.
 

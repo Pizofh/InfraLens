@@ -45,7 +45,7 @@ corporativo para suplir un lab ausente.
 
 | Entrega | Pasos pequeños y dependencias | Gate |
 |---|---|---|
-| 0.2 diff | **D01 lector — completo; D02 preflight scope/contexto — completo**; D03 servicios por nombre — siguiente; D04 listeners; D05 salida added/removed/changed/not_comparable | Sin falsos removed cuando falta cobertura, mismo namespace; ignorar PID/UUID y recursos volátiles |
+| 0.2 diff | **D01 lector — completo; D02 preflight scope/contexto — completo; D03 matching de servicios — completo**; D04 listeners — siguiente; D05 salida added/removed/changed/not_comparable | Sin falsos removed cuando falta cobertura, mismo namespace; ignorar PID/UUID y recursos volátiles |
 | 0.3 Docker opcional | Decisión de privilegio; proyección de campos; colector explícito; lab on/off/denied | Sin env/labels/inspect completo persistido, sin instalar daemon ni conceder docker group |
 | SSH | Inventario autorizado; OpenSSH BatchMode/host keys; empaquetado remoto; recuperar JSON; timeouts por host | Ningún host desconocido aceptado automáticamente; credenciales fuera del snapshot |
 | Mapping | Casos reales; contratos explícitos de arista; fuente y verificación; revisión humana | No equiparar conexión con dependencia; no escaneo lateral |
@@ -60,6 +60,11 @@ D02 entrega `preflight_comparison(before, after)`: requiere scope UUID de operad
 idéntico, schema major igual y valores conocidos e idénticos para uid/euid y los
 namespaces pid/net/mnt. Devuelve códigos de bloqueo en orden estable; no ofrece
 override ni calcula cambios. Un boot_id distinto no bloquea un diff del mismo scope.
+
+D03 entrega `match_services(before, after)`: usa sólo `ServiceAttributes.name`; ignora
+IDs locales, estado y PID. Devuelve matches y claves de un solo lado en orden estable.
+Un nombre duplicado en cualquiera de los snapshots queda ambiguo y no se asigna como
+matched, added o removed.
 
 Para diff, scope UUID igual no basta si cambió namespace o no puede verificarse:
 por defecto rechazar comparación global; en una versión futura permitir override

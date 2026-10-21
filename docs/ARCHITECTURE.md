@@ -47,6 +47,7 @@ src/infralens/
   reporting.py           # JSON y resumen; escritura segura
   snapshot_reader.py     # lector acotado compatible con snapshots 1.x
   diff_preflight.py      # scope/contexto comparable antes de calcular cambios
+  diff_matching.py       # matching por claves naturales, sin usar IDs locales
 tests/
   unit/
   integration/
@@ -77,6 +78,9 @@ para dos funciones. Tipos explícitos y funciones pequeñas bastan.
 - `preflight_comparison(before, after) -> ComparisonPreflight`: autoriza comparar
   sólo scope UUID de operador idéntico y contexto uid/euid y namespaces conocidos e
   iguales; devuelve códigos estables si la comparación global no es segura.
+- `match_services(before, after) -> ServiceMatching`: empareja por nombre de unidad,
+  deja claves de un solo lado para clasificación posterior y marca duplicados como
+  ambiguos; no decide added/removed ni compara estado.
 
 El orquestador genera UUID y tiempo UTC, caracteriza contexto host/namespace,
 ejecuta secuencialmente host, processes, sockets y systemd en workers separados,

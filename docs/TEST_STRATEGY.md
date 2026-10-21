@@ -3,7 +3,7 @@
 ## Estado y presupuesto
 
 Este documento prescribe pruebas para las capacidades todavía no implementadas.
-La suite tiene 126 casos: 125 pasan localmente y C14 se omite porque este contenedor
+La suite tiene 131 casos: 130 pasan localmente y C14 se omite porque este contenedor
 no tiene manager systemd. C14 pasó en GitHub Actions sobre Ubuntu con manager real.
 D01 cubre versiones, extensiones aditivas, tipos críticos y límites del lector;
 D02 cubre scope operator, UID/EUID, namespaces conocidos y desconocidos, y schema

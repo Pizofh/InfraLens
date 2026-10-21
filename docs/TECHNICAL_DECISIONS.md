@@ -105,6 +105,14 @@ códigos estables, sin nombres ni datos del host. `boot_id` distinto no bloquea 
 solo: permite comparar el mismo scope tras un reinicio. No hay override en 0.2 hasta
 que existan pruebas que justifiquen cómo conservar la advertencia.
 
+## D12 — Identidad de servicio en snapshots
+
+El nombre de unidad systemd es la clave natural entre scans. IDs de entidad son
+locales y `main_pid`, `active_state` y `sub_state` son valores que pueden cambiar sin
+que cambie la identidad del servicio. Si una entrada tiene el mismo nombre duplicado
+en cualquier lado, el matching la deja ambigua; no escoge una instancia ni la expone
+como alta o baja. La cobertura del colector y la clasificación final quedan para D05.
+
 ## Capacidades existentes y posición de InfraLens
 
 | Herramienta | Capacidad real relevante | Lo que no resuelve automáticamente | Decisión |
