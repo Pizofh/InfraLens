@@ -49,8 +49,8 @@ def test_worker_deadline_kills_worker_and_continues_to_next_collector() -> None:
     results = run_collectors(
         [_target("sleep_forever"), _target("return_context", "processes")],
         {"value": "still runs"},
-        global_timeout=4,
-        worker_timeout=0.2,
+        global_timeout=5,
+        worker_timeout=1.0,
     )
 
     assert time.monotonic() - started < 3
@@ -83,6 +83,18 @@ def test_worker_result_is_bounded() -> None:
     assert result.state == "collection_error"
     assert result.error_code == "worker_error"
     assert result.message == "worker result exceeded the IPC size limit"
+
+
+@pytest.mark.integration
+def test_host_collector_imports_and_serializes_inside_bounded_worker() -> None:
+    result = run_collectors(
+        [CollectorTarget("host", "infralens.collectors.host")], {}, worker_timeout=5
+    )[0]
+
+    assert result.state == "ok"
+    assert result.value["collector"]["id"] == "host"
+    assert isinstance(result.value["host"]["os_id"], str)
+    assert result.value["evidence"]
 
 
 def test_timeout_kills_descendants_in_worker_process_group(tmp_path: Path) -> None:

@@ -477,6 +477,7 @@
             "psutil.process_iter",
             "psutil.net_connections",
             "os-release",
+            "proc.boot_id",
             "platform.release",
             "platform.node",
             "systemctl.list-units",
@@ -1419,7 +1420,7 @@
     "Each snapshot contains exactly one host, processes, sockets, and systemd collector.",
     "Collector status, coverage, truncation, errors, and data references must agree.",
     "Entity, evidence, relation, assessment, and finding references resolve consistently within this snapshot.",
-    "Evidence fields equal the observed attributes of their subject; evidence is not raw command output.",
+    "Evidence fields equal the observed attributes of their host or entity subject; evidence is not raw command output.",
     "Unknown host or entity fields require a limitation; an empty collection does not imply whole-host absence.",
     "Rules are limited to FS_USAGE_HIGH and SYSTEMD_FAILED in schema version 1.0.0."
   ]

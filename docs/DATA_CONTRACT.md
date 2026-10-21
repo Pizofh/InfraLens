@@ -89,7 +89,11 @@ listener=(protocol,family,local_address,local_port,zone). No diff de procesos en
 
 Evidencia: id, collector_id, collected_at, source {type:api/file/command,
 name:valor allowlist, locator:str opcional saneado}, subject_id, claim:observed,
-fields:mapa de campos permitidos, limitations[]. Un hash de un archivo no sustituye
+fields:mapa de campos permitidos, limitations[]. `subject_id` puede ser `host` para
+atributos de `Snapshot.host`; la evidencia de entidades referencia su ID normalizado.
+La evidencia de host pertenece al collector `host` y sus fields deben coincidir con
+los campos observados del objeto host. `os-release` y `proc.boot_id` usan source type
+`file`; `platform.*` y `psutil.*` usan `api`. Un hash de un archivo no sustituye
 la evidencia ni implica que sea seguro leer ese archivo. No leer configuraciones
 arbitrarias ni incluir hashes de secretos.
 

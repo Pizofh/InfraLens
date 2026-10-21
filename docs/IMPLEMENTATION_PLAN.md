@@ -1,15 +1,15 @@
 # Plan incremental para Luna
 
 Cada fila es una tarea separada y revisable. No implementar todo en una sola entrega.
-T00–T03 están completos; los checks de filas posteriores son requisitos futuros.
+T00–T04a están completos; los checks de filas posteriores son requisitos futuros.
 
 | ID / dependencia | Objetivo y componentes | Cambios esperados | Pruebas / aceptación | Riesgo o decisión resuelta |
 |---|---|---|---|---|
 | T00 / ninguna — completo | Bootstrap | Package Python 3.12, CLI help/version, lock y pytest/Ruff; `scan` explícitamente pendiente | Cuatro pruebas de bootstrap y wheel instalado desde fuera del checkout | psutil y Pydantic runtime; sin Typer/Rich |
 | T01 / T00 — completo | models.py y schema | Modelos estrictos 1.0.0, referencias/tiempos, JSON Schema Draft 2020-12 y tres fixtures | 13 pruebas de modelo; schema y relaciones/socket unknown validados | Cambios incompatibles requieren nueva versión de esquema |
 | T02 / T01 — completo | runner.py | Completo: systemctl allowlisted, argv acotado, PATH de sistema fijo, stdin cerrado, captura incremental y deadlines de hasta 30 s | 8 pruebas: timeout, salida limitada, stderr secreto descartado, status no cero, shell literal, env mínimo, lookup fuera de cwd | Sin shell; stderr sólo tiene conteo; timeout mata el grupo de procesos |
-| T03 / T02 — completo | scan.py workers | Supervisor secuencial spawn, contexto con deadlines, RLIMIT_AS <=256 MiB, JSON IPC acotado a 8 MiB, timeouts y limpieza de grupo de procesos | 13 pruebas: resultado JSON, límite de memoria, error saneado, worker/global timeout, límite IPC, descendientes terminados y validación de parámetros | Evitar deadlock del pipe; no hacer threading no cancelable |
-| T04a / T03 | collectors/host.py OS y recursos | os-release parser, kernel, CPU/memoria, contexto/limitaciones | C02/C03 con Ubuntu/RHEL sintéticos; metadatos inaccesibles | Sin source del archivo ni machine-id |
+| T03 / T02 — completo | scan.py workers | Supervisor secuencial spawn, contexto con deadlines, RLIMIT_AS <=256 MiB, JSON IPC acotado a 8 MiB, timeouts y limpieza de grupo de procesos | 14 pruebas: resultado JSON, límite de memoria, error saneado, worker/global timeout, límite IPC, descendientes terminados, collector importado dentro del worker y validación de parámetros | Evitar deadlock del pipe; no hacer threading no cancelable |
+| T04a / T03 — completo | collectors/host.py OS y recursos | Parser acotado de os-release sin shell, kernel/hostname/boot ID, CPU/memoria, UID/EUID y namespaces; evidencia del host y recursos | 7 pruebas: Ubuntu/RHEL sintéticos, syntax adversaria no ejecutada, fallback, datos malformados, permiso denegado y namespace desconocido | Sin source del archivo ni machine-id; RHEL real sigue sin probar |
 | T04b / T04a | host.py filesystems | disk_partitions/usage, límites por mount y evidencia | Umbrales, montajes ilegibles, total=0 y filesystem excluido por método | No inspeccionar red ni corregir permisos |
 | T04c / T04a | host.py interfaces | IPs/prefijos/estado, IPv6 zonas, filtros documentados | C06 para interfaces, direcciones inválidas y acceso parcial | Sin MAC por defecto ni inferir exposición |
 | T05 / T03,T04a | processes.py | Inventario mínimo y manejo de desaparición | C04/C05, UID desconocido, truncamiento, canarios argv/env | Nunca leer argv/env; PID no es identidad |

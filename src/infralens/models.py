@@ -358,6 +358,7 @@ class EvidenceSource(Model):
         "psutil.process_iter",
         "psutil.net_connections",
         "os-release",
+        "proc.boot_id",
         "platform.release",
         "platform.node",
         "systemctl.list-units",
@@ -385,6 +386,8 @@ class Evidence(Model):
             raise ValueError("systemctl evidence source must have type command")
         if self.source.name == "os-release" and self.source.type != "file":
             raise ValueError("os-release evidence source must have type file")
+        if self.source.name == "proc.boot_id" and self.source.type != "file":
+            raise ValueError("proc.boot_id evidence source must have type file")
         if self.source.name.startswith(("psutil.", "platform.")) and self.source.type != "api":
             raise ValueError("psutil/platform evidence source must have type api")
         for value in self.fields.values():
@@ -516,12 +519,19 @@ class Snapshot(Model):
             collector = collector_map[evidence.collector_id]
             if not collector.started_at <= evidence.collected_at <= collector.finished_at:
                 raise ValueError(f"evidence {evidence.id} timestamp falls outside its collector")
-            if evidence.subject_id not in entity_map:
-                raise ValueError(f"evidence {evidence.id} references unknown subject")
-            entity = entity_map[evidence.subject_id]
-            if evidence.collector_id != _entity_collector(entity.kind):
-                raise ValueError(f"evidence {evidence.id} belongs to the wrong collector")
-            attributes = entity.attributes.model_dump(mode="json")
+            if evidence.subject_id == "host":
+                if evidence.collector_id != "host":
+                    raise ValueError(
+                        f"evidence {evidence.id} host subject belongs to wrong collector"
+                    )
+                attributes = self.host.model_dump(mode="json")
+            else:
+                entity = entity_map.get(evidence.subject_id)
+                if entity is None:
+                    raise ValueError(f"evidence {evidence.id} references unknown subject")
+                if evidence.collector_id != _entity_collector(entity.kind):
+                    raise ValueError(f"evidence {evidence.id} belongs to the wrong collector")
+                attributes = entity.attributes.model_dump(mode="json")
             if any(
                 key not in attributes or attributes[key] != value
                 for key, value in evidence.fields.items()
@@ -642,8 +652,11 @@ class Snapshot(Model):
         referenced_evidence = {
             evidence_id for entity in self.entities for evidence_id in entity.evidence_ids
         }
+        referenced_evidence.update(
+            evidence.id for evidence in self.evidence if evidence.subject_id == "host"
+        )
         if referenced_evidence != set(evidence_map):
-            raise ValueError("every evidence record must be referenced by its subject entity")
+            raise ValueError("every evidence record must be referenced by its subject")
 
         for entity in self.entities:
             for field_name, value in entity.attributes.model_dump().items():
@@ -739,8 +752,8 @@ _SCHEMA_INVARIANTS = [
         "within this snapshot."
     ),
     (
-        "Evidence fields equal the observed attributes of their subject; evidence is not raw "
-        "command output."
+        "Evidence fields equal the observed attributes of their host or entity subject; evidence "
+        "is not raw command output."
     ),
     (
         "Unknown host or entity fields require a limitation; an empty collection does not imply "

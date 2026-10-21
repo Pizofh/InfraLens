@@ -3,8 +3,9 @@
 ## Estado y presupuesto
 
 Este documento prescribe pruebas futuras para las capacidades todavía no
-implementadas. T00–T03 tienen una suite ejecutada de 38 pruebas unitarias; cubre CLI,
-modelos, contrato, schema, runner y supervisor aislado. No demuestra discovery,
+implementadas. T00–T04a tienen una suite ejecutada de 48 pruebas; cubre CLI, modelos,
+contrato, schema, runner, supervisor y collector host aislado, incluida una prueba de
+integración del collector dentro del worker acotado. No demuestra discovery integral,
 compatibilidad del manager systemd, rendimiento del scan ni soporte RHEL/WSL.
 Objetivo CI base sin servicios: unitarias + integración local no root en Ubuntu
 24.04, Python 3.12; añadir 3.13 cuando las dependencias resueltas lo permitan.

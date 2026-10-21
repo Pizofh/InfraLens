@@ -156,3 +156,42 @@ def test_unknown_socket_owner_has_a_limit_without_an_invented_relation() -> None
         for evidence in snapshot.evidence
         for limitation in evidence.limitations
     )
+
+
+def test_host_metadata_can_have_direct_evidence(partial_snapshot: dict[str, Any]) -> None:
+    partial_snapshot["collectors"][0]["evidence_ids"].append("e:2")
+    partial_snapshot["evidence"].append(
+        {
+            "id": "e:2",
+            "collector_id": "host",
+            "collected_at": "2026-10-21T14:00:00Z",
+            "source": {"type": "file", "name": "os-release", "locator": "/etc/os-release"},
+            "subject_id": "host",
+            "claim": "observed",
+            "fields": {"os_id": "ubuntu"},
+            "limitations": [],
+        }
+    )
+
+    snapshot = Snapshot.model_validate(partial_snapshot)
+
+    assert snapshot.evidence[-1].subject_id == "host"
+
+
+def test_host_evidence_must_match_observed_host_fields(partial_snapshot: dict[str, Any]) -> None:
+    partial_snapshot["collectors"][0]["evidence_ids"].append("e:2")
+    partial_snapshot["evidence"].append(
+        {
+            "id": "e:2",
+            "collector_id": "host",
+            "collected_at": "2026-10-21T14:00:00Z",
+            "source": {"type": "file", "name": "os-release", "locator": "/etc/os-release"},
+            "subject_id": "host",
+            "claim": "observed",
+            "fields": {"os_id": "rhel"},
+            "limitations": [],
+        }
+    )
+
+    with pytest.raises(ValidationError, match="fields do not match"):
+        Snapshot.model_validate(partial_snapshot)

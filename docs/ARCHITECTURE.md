@@ -25,9 +25,9 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 ## Estructura objetivo del MVP; implementar por tarea
 
-T00–T03 crearon el paquete base, CLI, modelos/schema, runner y supervisor de workers.
-Los collectors y el flujo completo pertenecen a las tareas T04–T10; no adelantar
-módulos de tareas posteriores.
+T00–T04a crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers y
+collector aislado de OS/recursos/contexto. Filesystem, interfaces y el flujo completo
+pertenecen a T04b–T10; no adelantar módulos de tareas posteriores.
 
 ```text
 pyproject.toml
@@ -72,7 +72,9 @@ El orquestador genera UUID y tiempo UTC, caracteriza contexto host/namespace,
 ejecuta secuencialmente host, processes, sockets y systemd en workers separados,
 valida el agregado, aplica reglas y emite salida. Un worker no se acepta parcialmente
 si devuelve un objeto truncado. Una excepción inesperada se registra como error
-saneado del colector y el scan continúa si queda presupuesto.
+saneado del colector y el scan continúa si queda presupuesto. Los ordinales de
+evidencia de cada worker son locales; el padre los reenumera de forma determinista
+al ensamblar el snapshot.
 
 `multiprocessing` con contexto spawn permite limitar llamadas de psutil o I/O
 bloqueante que un timeout de subprocess no cubre. El worker devuelve un único

@@ -76,6 +76,15 @@ acotado en vez de threads no cancelables. No llevar el MVP a concurrencia agresi
 Tests usan sockets efímeros y fixtures; Compose y VM son jobs opcionales de capacidad.
 Dos reglas simples sustituyen una calificación vaga de madurez operacional.
 
+## D09 — Evidencia de metadatos del host
+
+El objeto `Snapshot.host` no es una entidad normalizada, pero sus campos observados
+necesitan procedencia. `Evidence.subject_id="host"` referencia ese objeto; la
+validación compara sus `fields` con `Snapshot.host` y exige que la evidencia pertenezca
+al collector `host`. Esto agrega semántica al identificador existente sin cambiar la
+forma JSON del sobre ni inventar una entidad host duplicada. Los IDs `e:N` de cada
+worker son locales y el orquestador los reenumera al ensamblar un snapshot.
+
 ## Capacidades existentes y posición de InfraLens
 
 | Herramienta | Capacidad real relevante | Lo que no resuelve automáticamente | Decisión |
