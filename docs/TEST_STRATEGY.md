@@ -2,9 +2,11 @@
 
 ## Estado y presupuesto
 
-Este documento prescribe pruebas futuras para las capacidades todavía no
-implementadas. T00–T11 tienen 101 casos: 100 pasan y C14 queda omitida explícitamente
-porque este entorno no tiene manager systemd. La suite cubre CLI, modelos,
+Este documento prescribe pruebas para las capacidades todavía no implementadas.
+La suite tiene 113 casos: 112 pasan localmente y C14 se omite porque este contenedor
+no tiene manager systemd. C14 pasó en GitHub Actions sobre Ubuntu con manager real.
+D01 agrega cobertura de versiones, extensiones aditivas, tipos críticos y límites del
+lector offline. También cubre CLI, modelos,
 contrato, schema, runner, supervisor y collector host aislado (OS, recursos, contexto,
 filesystems, interfaces, procesos, sockets y systemd), assessment de las dos reglas,
 persistencia JSON privada/atómica, resumen terminal saneado e integración CLI no root.
@@ -37,9 +39,8 @@ WSL2/Linux; import/help no implica compatibilidad de colectores en Windows.
 | C15 regresión | Unidad | snapshots sanitizados congelados y lectura 1.x | Sin cambios involuntarios del contrato ni falsos removed |
 
 C14 es requerida para declarar soporte de systemd, pero no para desarrollar scan
-sin systemd; job separado detecta capacidad y reporta skip explícito si falta. Antes
-de publicar 0.1 con soporte systemd debe pasar en un Linux con systemd real. No
-contar un skip como éxito de esa capacidad. C01–C13 y C15 son gate base, con
+sin systemd. El job dedicado valida explícitamente el manager y ejecuta C14 como root;
+si falta capacidad, falla en vez de contar un skip como éxito. C01–C13 y C15 son gate base, con
 fixtures de systemd incluso cuando no corre C14.
 
 ## Fixtures y oráculos
@@ -70,11 +71,11 @@ Probar también estado inactive normal para impedir falso positivo failed.
 3. `pytest -q tests/unit` y `pytest -q tests/integration -m 'not systemd and not docker'`.
 4. `python -m build`; instalar wheel en venv limpio y ejecutar help, version y scan
    desde fuera del checkout. Verificar JSON y código documentado.
-5. Job systemd separado en runner adecuado; no asumir PID1 por usar Ubuntu runner.
+5. Job systemd separado: exigir manager accesible y ejecutar C14 como root.
 
 Estos checks se ejecutan en `.github/workflows/ci.yml` con Ubuntu 24.04 y Python 3.12.
-El job de systemd es independiente: ejecuta C14 cuando el entorno tiene manager
-systemd y harness root-capable; pytest informa skip con motivo explícito si no.
+El job de systemd es independiente y falla si no hay manager systemd o el preflight
+no puede alcanzarlo; ejecuta pytest con root para evitar que un skip pase inadvertido.
 Los markers `integration`, `systemd` y `docker` ya están definidos. En cada
 entrega Luna reporta conteos passed/failed/skipped; cero tests no
 valida nada. Subir a CI sólo fixtures saneadas; nunca artifacts de scan real por

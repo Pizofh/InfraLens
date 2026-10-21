@@ -1,12 +1,11 @@
 # Especificación normativa MVP 0.1
 
-Los MUST de recolección de esta especificación son criterios de aceptación
-pendientes; T00–T11 implementan CLI, contrato, runner, supervisor, collectors aislados
+Los MUST de recolección de esta especificación están implementados; T00–T11 cubren
+CLI, contrato, runner, supervisor, collectors aislados
 de OS, recursos, contexto, filesystems, interfaces, procesos, sockets y servicios
 systemd, reglas puras de assessment, reporting seguro e integración del comando
-`scan` y CI base. Plataforma objetivo Linux con Python 3.12; validación local y CI
-en Ubuntu 24.04. RHEL 9 y WSL2 requieren pruebas explícitas; C14 requiere un manager
-systemd real y sigue sin verificarse en este entorno.
+`scan` y CI base. C14 pasó en GitHub Actions sobre Ubuntu 24.04 con systemd real.
+RHEL 9 y WSL2 requieren pruebas explícitas.
 
 ## CLI definitiva de esta versión
 

@@ -85,6 +85,17 @@ al collector `host`. Esto agrega semántica al identificador existente sin cambi
 forma JSON del sobre ni inventar una entidad host duplicada. Los IDs `e:N` de cada
 worker son locales y el orquestador los reenumera al ensamblar un snapshot.
 
+## D10 — Lectura compatible sin relajar el productor
+
+El productor conserva `extra=forbid`. El lector 1.x conserva el JSON original en
+`SnapshotDocument.raw_data`, elimina extensiones aditivas sólo de la vista normalizada
+que usa el código y valida los campos conocidos con los mismos modelos estrictos.
+Sólo se acepta el major 1; los valores críticos desconocidos (kinds, enums y tipos)
+fallan de forma cerrada. Un major futuro exige negociación explícita. El límite de
+16 MiB, claves JSON duplicadas y números no finitos se rechazan para evitar lecturas
+ambiguas o sin cota. Consecuencia: consumidores pueden retener datos que InfraLens
+aún no entiende sin incluirlos inadvertidamente en una comparación.
+
 ## Capacidades existentes y posición de InfraLens
 
 | Herramienta | Capacidad real relevante | Lo que no resuelve automáticamente | Decisión |

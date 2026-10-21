@@ -1,7 +1,8 @@
 # Plan incremental para Luna
 
 Cada fila es una tarea separada y revisable. No implementar todo en una sola entrega.
-T00–T11 están completos; la única capacidad de laboratorio pendiente es C14 real.
+T00–T11 y la validación real C14 están completos. D01 de la entrega 0.2 implementa
+un lector compatible de snapshots 1.x; el siguiente paso es preflight de scope y contexto.
 
 | ID / dependencia | Objetivo y componentes | Cambios esperados | Pruebas / aceptación | Riesgo o decisión resuelta |
 |---|---|---|---|---|
@@ -14,11 +15,11 @@ T00–T11 están completos; la única capacidad de laboratorio pendiente es C14 
 | T04c / T04a — completo | host.py interfaces | net_if_addrs/net_if_stats, IPs/prefijos canónicos, zonas IPv6 y máximo 256 | 6 pruebas: IP/máscara/zona, error independiente de cada fuente, zona no resuelta, dirección inválida y límite truncado | Se omiten familias no IP/MAC; sin inferir exposición |
 | T05 / T03,T04a — completo | processes.py | PID, create_time, nombre y UID observables; límite 10.000; fallos por campo y carrera conservan datos | 6 pruebas: campos/evidencia ordenados, desaparición, permiso UID, iterator denegado, truncamiento y canarios de datos prohibidos | Sólo lectura; no argv/env/cwd/open_files; PID no es identidad entre scans |
 | T06 / T05 — completo | sockets.py | TCP LISTEN/UDP bound, IPv4/IPv6 y relación owned_by revalidada; límite 20.000 y presupuesto IPC | 7 pruebas unitarias + listener Linux real: filtros, PID null/reutilizado, permisos, zona IPv6, truncamiento y cierre | Sin conexiones salientes; visibilidad sin root siempre parcial |
-| T07 / T03,T05 — completo | systemd.py | Detección de capacidad/runtime, servicios cargados, propiedades allowlisted y MainPID revalidado | 6 pruebas: unsupported, manager desconectado, allowlist/redacción, PID 0/malformado, vínculo estable/carrera y límite | C14 real aún no verificada; unidades cargadas no equivalen a todas instaladas |
+| T07 / T03,T05 — completo | systemd.py | Detección de capacidad/runtime, servicios cargados, propiedades allowlisted y MainPID revalidado | 6 pruebas: unsupported, manager desconectado, allowlist/redacción, PID 0/malformado, vínculo estable/carrera y límite | C14 real pasó en Actions; unidades cargadas no equivalen a todas instaladas |
 | T08 / T04b,T07 — completo | assessment.py | FS_USAGE_HIGH, SYSTEMD_FAILED, evaluaciones y referencias basadas sólo en snapshot | 7 pruebas: umbral exacto 90%, positivos/negativos, capacidad cero, dato faltante, estados systemd y unsupported | No health score ni puertos como riesgo |
 | T09 / T01,T08 — completo | reporting.py | Validación de snapshot, JSON acotado, escritura privada atómica, resumen saneado | 7 pruebas: JSON/0600, overwrite, symlink, falla/limpieza, carrera no-replace y ANSI/controles | Directorio hostil fuera de alcance; no dump arbitrario |
-| T10 / T04c,T06,T07,T09 — completo | cli/scan integración | Workers → snapshot validado → reglas → JSON privado y resumen; códigos e interrupción | 8 pruebas CLI + scan Linux no root; A1–A9; muestra Debian 13/Python 3.12: 0,85 s, RSS muestreado del árbol 62,3 MiB, JSON 49.449 bytes | Muestra puntual, no SLA; C14 real sigue pendiente |
-| T11 / T10 — completo | CI y documentación de uso | Workflow Ubuntu/Python 3.12, checks, wheel y job systemd separado; README de uso | 100 pruebas pasan, C14 omite explícitamente por manager ausente; YAML y comandos CI validados localmente | Workflow no sube snapshots; RHEL/WSL no declarados probados |
+| T10 / T04c,T06,T07,T09 — completo | cli/scan integración | Workers → snapshot validado → reglas → JSON privado y resumen; códigos e interrupción | 8 pruebas CLI + scan Linux no root; A1–A9; muestra Debian 13/Python 3.12: 0,85 s, RSS muestreado del árbol 62,3 MiB, JSON 49.449 bytes | Muestra puntual, no SLA; RHEL/WSL no declarados probados |
+| T11 / T10 — completo | CI y documentación de uso | Workflow Ubuntu/Python 3.12, checks, wheel y job systemd separado; README de uso | CI completa; C14 pasó en runner Ubuntu con manager real; workflow exige root y preflight | Workflow no sube snapshots; RHEL/WSL no declarados probados |
 
 Orden recomendado: T00 → T01 → T02 → T03 → T04a/b/c → T05 → T06 → T07 → T08 →
 T09 → T10 → T11. No generar código de fases futuras al crear estructura.
@@ -44,10 +45,16 @@ corporativo para suplir un lab ausente.
 
 | Entrega | Pasos pequeños y dependencias | Gate |
 |---|---|---|
-| 0.2 diff | D01 lector compatible; D02 preflight scope/contexto; D03 servicios por nombre; D04 listeners; D05 salida added/removed/changed/not_comparable | Sin falsos removed cuando falta cobertura, mismo namespace; ignorar PID/UUID y recursos volátiles |
+| 0.2 diff | **D01 lector compatible — completo**; D02 preflight scope/contexto — siguiente; D03 servicios por nombre; D04 listeners; D05 salida added/removed/changed/not_comparable | Sin falsos removed cuando falta cobertura, mismo namespace; ignorar PID/UUID y recursos volátiles |
 | 0.3 Docker opcional | Decisión de privilegio; proyección de campos; colector explícito; lab on/off/denied | Sin env/labels/inspect completo persistido, sin instalar daemon ni conceder docker group |
 | SSH | Inventario autorizado; OpenSSH BatchMode/host keys; empaquetado remoto; recuperar JSON; timeouts por host | Ningún host desconocido aceptado automáticamente; credenciales fuera del snapshot |
 | Mapping | Casos reales; contratos explícitos de arista; fuente y verificación; revisión humana | No equiparar conexión con dependencia; no escaneo lateral |
+
+D01 entrega `load_snapshot(path)`: limita el archivo a 16 MiB, rechaza claves JSON
+duplicadas y números no finitos, acepta sólo major 1, valida todos los campos
+conocidos y conserva intacto el documento original para no perder extensiones
+aditivas. Los tipos y enums críticos desconocidos se rechazan. No implementa todavía
+clasificación ni salida de diferencias.
 
 Para diff, scope UUID igual no basta si cambió namespace o no puede verificarse:
 por defecto rechazar comparación global; en una versión futura permitir override

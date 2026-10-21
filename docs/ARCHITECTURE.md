@@ -25,10 +25,9 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 ## Estructura objetivo del MVP; implementar por tarea
 
-T00–T10 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
-collectors host, procesos, sockets, systemd aislado, reglas puras de assessment y
-reporting seguro, flujo completo de scan y CI base. C14 requiere una validación
-posterior en un entorno con manager systemd real.
+T00–T11 completan el MVP local, incluidos CLI, contrato, colectores, assessment,
+reporting y CI. C14 pasó en el runner Ubuntu de GitHub Actions con systemd real.
+La entrega 0.2 añade capacidades offline gradualmente; no cambia el flujo local.
 
 ```text
 pyproject.toml
@@ -46,6 +45,7 @@ src/infralens/
     systemd.py           # capacidad y propiedades allowlist
   assessment.py          # reglas puras y condiciones de aplicabilidad
   reporting.py           # JSON y resumen; escritura segura
+  snapshot_reader.py     # lector acotado compatible con snapshots 1.x
 tests/
   unit/
   integration/
@@ -70,6 +70,9 @@ para dos funciones. Tipos explícitos y funciones pequeñas bastan.
   aplica límites de tamaño, crea temporal 0600, evita reemplazo accidental y
   publica el resultado de forma atómica. `format_summary(snapshot)` sanea controles
   ANSI de los textos antes de mostrarlos; quien integra CLI decide códigos y errores.
+- `load_snapshot(path) -> SnapshotDocument`: lector offline con límite de 16 MiB,
+  valida semánticas conocidas, conserva el JSON original en `raw_data`, acepta
+  campos aditivos desconocidos y rechaza majors, enums o tipos no reconocidos.
 
 El orquestador genera UUID y tiempo UTC, caracteriza contexto host/namespace,
 ejecuta secuencialmente host, processes, sockets y systemd en workers separados,

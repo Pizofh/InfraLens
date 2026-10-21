@@ -5,23 +5,23 @@
 T00–T11 ya están implementadas: bootstrap, schema/validación del snapshot, runner,
 supervisor de workers, collectors host, procesos, sockets, systemd y reglas puras de
 assessment, reporting JSON seguro, integración CLI, CI y documentación de uso.
-La única validación pendiente es **C14** en un host de laboratorio con manager
-systemd real; este entorno no lo proporciona. Para esa validación, lee la matriz C14
-y ejecuta sólo la unidad temporal aislada descrita allí. Para cualquier cambio,
-consulta [brief](PROJECT_BRIEF.md), [MVP](MVP_SPEC.md), [contrato](DATA_CONTRACT.md) y
-[plan](IMPLEMENTATION_PLAN.md). Inspecciona Git status e instrucciones locales.
+C14 también pasó en GitHub Actions sobre Ubuntu con systemd real. D01 de 0.2 añade
+`load_snapshot`, un lector acotado y compatible con 1.x. La siguiente tarea es D02:
+preflight de scope y contexto para evitar comparar snapshots de ámbitos incompatibles.
+Para cualquier cambio, consulta [brief](PROJECT_BRIEF.md), [MVP](MVP_SPEC.md),
+[contrato](DATA_CONTRACT.md) y [plan](IMPLEMENTATION_PLAN.md). Inspecciona Git status
+e instrucciones locales.
 
 El entorno usa Python 3.12, uv y lock congelado. Ejecuta `export
 UV_CACHE_DIR=/tmp/uv-infralens-cache UV_LINK_MODE=copy`, `uv sync --frozen --extra dev`
-y verifica con pytest/Ruff/build. T03–T11 están probadas en aislamiento y el CLI
-produce snapshots reales locales; C14 real sigue sin verificarse.
+y verifica con pytest/Ruff/build. T03–T11 están probadas en aislamiento, C14 pasó en
+CI con systemd real y el CLI produce snapshots reales locales.
 
 ## Orden restante
 
-No hay otra implementación pendiente en el MVP base. Termina la comprobación de C14
-en un entorno que cumpla sus requisitos; no implementes
-transportes o Docker por adelantado. No solicites confirmación para decisiones ya
-resueltas en estos documentos.
+D01 está completo. Seguir D02 → D03 → D04 → D05 para diff conservador; no implementes
+transportes SSH ni Docker por adelantado. No solicites confirmación para decisiones
+ya resueltas en estos documentos.
 
 ## Convenciones
 
@@ -52,7 +52,7 @@ systemd real, distinguir fallo de entorno de defecto de collector; no silenciarl
 
 ## No desarrollar todavía
 
-Diff, Docker API, SSH, inventario YAML, Nginx parsers, mapas distribuidos, HTML,
+Docker API, SSH, inventario YAML, Nginx parsers, mapas distribuidos, HTML,
 SQLite, web, SaaS, vulnerabilidades, scoring de madurez, IA, remediación o monitoring.
 El laboratorio Compose es opcional futuro: no prerequisite de desarrollo.
 
@@ -70,9 +70,9 @@ normal es dato del scan, no motivo para pedir elevación.
 
 Las tareas cloud ya están aisladas. Usa el checkout existente en
 `/workspace/InfraLens`; no crees worktrees salvo petición explícita. Python 3.12,
-uv y dependencias congeladas están disponibles. Los checks T00–T11 pasan; el
-commit actual está en `main` y el borrador cloud guarda esa referencia. No hay
-servicio persistente que arrancar ni credenciales necesarias para el flujo local.
+uv y dependencias congeladas están disponibles. Los checks T00–T11 y C14 pasan en CI;
+el commit actual está en `main`. No hay servicio persistente que arrancar ni
+credenciales necesarias para el flujo local.
 El usuario autorizó commits revisables y push a `origin/main` al terminar cada tarea
 validada; no publicar paquetes ni el entorno cloud sin una petición aparte.
 

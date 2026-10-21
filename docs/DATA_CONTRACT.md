@@ -190,12 +190,14 @@ scope, no enlaces entre scans. TCP requiere state=listen; UDP state=bound. No
 números negativos; available/used/free <= total cuando total es conocido. No exigir
 used+free=total: bloques reservados y semánticas de filesystem pueden diferir.
 
-Productor valida con extra=forbid para descubrir errores. Lector 1.x acepta sólo
-majors conocidos, conserva campos desconocidos aditivos y los ignora al comparar;
-no descarta semántica crítica ni acepta tipos inválidos. Esquema mayor nuevo para
-eliminar campos, cambiar significados o enums de control. Nuevos tipos de entidad
-y enums requieren negociación de lector: no tratarlos automáticamente como adición
-compatible. Fixture 1.0.0 congelado y pruebas de migración antes de 2.0.
+Productor valida con extra=forbid para descubrir errores. `load_snapshot` limita la
+lectura a 16 MiB y acepta sólo major 1. El `SnapshotDocument` conserva el JSON
+original completo en `raw_data` (incluidos campos aditivos desconocidos) y expone un
+`Snapshot` validado sólo con semántica conocida; esos campos desconocidos no entran
+en comparaciones. No descarta semántica crítica ni acepta tipos inválidos. Esquema
+mayor nuevo para eliminar campos, cambiar significados o enums de control. Nuevos
+tipos de entidad y enums requieren negociación de lector: no tratarlos automáticamente
+como adición compatible. Fixture 1.0.0 congelado y pruebas de migración antes de 2.0.
 
 ## Ejemplo mínimo de cobertura parcial
 
