@@ -1,0 +1,189 @@
+{
+  "schema_version": "1.0.0",
+  "tool_version": "0.1.0",
+  "scan_id": "20ce8dac-2789-47d6-b057-80bf452c2503",
+  "scope_id": "39cb65cb-a089-4208-82f7-d636cdb7bef1",
+  "scope_origin": "operator",
+  "started_at": "2026-10-21T14:00:00Z",
+  "finished_at": "2026-10-21T14:00:01Z",
+  "host": {
+    "os_id": "ubuntu",
+    "os_version": "24.04",
+    "kernel": "6.8.0",
+    "hostname": null,
+    "boot_id": null
+  },
+  "context": {
+    "uid": 1000,
+    "euid": 1000,
+    "namespaces": {
+      "pid": null,
+      "net": null,
+      "mnt": null
+    },
+    "limitations": [
+      {
+        "code": "context_unavailable",
+        "message": "Namespaces pid, net, mnt no disponibles en este ejemplo."
+      }
+    ]
+  },
+  "collectors": [
+    {
+      "id": "host",
+      "status": "permission_denied",
+      "coverage": "partial",
+      "scope": "OS y filesystems legibles; recursos/interfaces no accesibles",
+      "started_at": "2026-10-21T14:00:00Z",
+      "finished_at": "2026-10-21T14:00:01Z",
+      "entity_ids": [
+        "filesystem:1"
+      ],
+      "evidence_ids": [
+        "e:1"
+      ],
+      "errors": [
+        {
+          "code": "permission_denied",
+          "operation": "read_host_resources",
+          "message": "Acceso limitado en el escenario sintético."
+        }
+      ],
+      "limitations": [],
+      "truncated": false
+    },
+    {
+      "id": "processes",
+      "status": "permission_denied",
+      "coverage": "none",
+      "scope": "Procesos visibles al usuario",
+      "started_at": "2026-10-21T14:00:00Z",
+      "finished_at": "2026-10-21T14:00:01Z",
+      "entity_ids": [],
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "permission_denied",
+          "operation": "process_iter",
+          "message": "Acceso limitado en el escenario sintético."
+        }
+      ],
+      "limitations": [],
+      "truncated": false
+    },
+    {
+      "id": "sockets",
+      "status": "permission_denied",
+      "coverage": "none",
+      "scope": "Sockets TCP LISTEN y UDP bound del namespace",
+      "started_at": "2026-10-21T14:00:00Z",
+      "finished_at": "2026-10-21T14:00:01Z",
+      "entity_ids": [],
+      "evidence_ids": [],
+      "errors": [
+        {
+          "code": "permission_denied",
+          "operation": "net_connections",
+          "message": "Acceso limitado en el escenario sintético."
+        }
+      ],
+      "limitations": [],
+      "truncated": false
+    },
+    {
+      "id": "systemd",
+      "status": "unsupported",
+      "coverage": "none",
+      "scope": "Unidades service cargadas en el system manager",
+      "started_at": "2026-10-21T14:00:00Z",
+      "finished_at": "2026-10-21T14:00:01Z",
+      "entity_ids": [],
+      "evidence_ids": [],
+      "errors": [],
+      "limitations": [
+        {
+          "code": "runtime_absent",
+          "message": "No hay systemd operativo."
+        }
+      ],
+      "truncated": false
+    }
+  ],
+  "entities": [
+    {
+      "id": "filesystem:1",
+      "kind": "filesystem",
+      "attributes": {
+        "device": "/dev/vda1",
+        "mountpoint": "/",
+        "fs_type": "ext4",
+        "total_bytes": 10737418240,
+        "used_bytes": 10200547328,
+        "free_bytes": 536870912
+      },
+      "evidence_ids": [
+        "e:1"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "e:1",
+      "collector_id": "host",
+      "collected_at": "2026-10-21T14:00:00Z",
+      "source": {
+        "type": "api",
+        "name": "psutil.disk_usage",
+        "locator": "/"
+      },
+      "subject_id": "filesystem:1",
+      "claim": "observed",
+      "fields": {
+        "total_bytes": 10737418240,
+        "used_bytes": 10200547328,
+        "free_bytes": 536870912
+      },
+      "limitations": []
+    }
+  ],
+  "relations": [],
+  "assessment": [
+    {
+      "rule_id": "FS_USAGE_HIGH",
+      "rule_version": "1.0.0",
+      "subject_id": "filesystem:1",
+      "state": "triggered",
+      "finding_id": "f:1",
+      "reason_code": null
+    },
+    {
+      "rule_id": "SYSTEMD_FAILED",
+      "rule_version": "1.0.0",
+      "subject_id": null,
+      "state": "not_evaluable",
+      "finding_id": null,
+      "reason_code": "collector_unsupported"
+    }
+  ],
+  "findings": [
+    {
+      "id": "f:1",
+      "rule_id": "FS_USAGE_HIGH",
+      "rule_version": "1.0.0",
+      "severity": "warning",
+      "subject_id": "filesystem:1",
+      "claim": "observed",
+      "evidence_ids": [
+        "e:1"
+      ],
+      "message": "Uso de /: 95% en esta muestra.",
+      "review_action": "Revisar crecimiento y capacidad; no borrar datos automáticamente."
+    }
+  ],
+  "limitations": [
+    {
+      "code": "host_metadata_partial",
+      "message": "hostname y boot_id no disponibles; recursos e interfaces fuera de cobertura en este ejemplo."
+    }
+  ]
+}

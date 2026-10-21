@@ -1,0 +1,1426 @@
+{
+  "$defs": {
+    "Address": {
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "title": "Address",
+          "type": "string"
+        },
+        "family": {
+          "enum": [
+            "ipv4",
+            "ipv6"
+          ],
+          "title": "Family",
+          "type": "string"
+        },
+        "prefix_length": {
+          "anyOf": [
+            {
+              "maximum": 128,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Prefix Length"
+        },
+        "scope_id": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope Id"
+        }
+      },
+      "required": [
+        "family",
+        "address",
+        "prefix_length"
+      ],
+      "title": "Address",
+      "type": "object"
+    },
+    "Assessment": {
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Finding Id"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason Code"
+        },
+        "rule_id": {
+          "enum": [
+            "FS_USAGE_HIGH",
+            "SYSTEMD_FAILED"
+          ],
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "rule_version": {
+          "const": "1.0.0",
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "triggered",
+            "not_triggered",
+            "not_evaluable"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Subject Id"
+        }
+      },
+      "required": [
+        "rule_id",
+        "rule_version",
+        "subject_id",
+        "state",
+        "finding_id",
+        "reason_code"
+      ],
+      "title": "Assessment",
+      "type": "object"
+    },
+    "CollectionError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "enum": [
+            "permission_denied",
+            "timeout",
+            "command_failed",
+            "parse_error",
+            "io_error",
+            "worker_error",
+            "global_deadline"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "errno": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Errno"
+        },
+        "exit_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exit Code"
+        },
+        "message": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "operation": {
+          "enum": [
+            "read_os_release",
+            "read_host_resources",
+            "disk_partitions",
+            "disk_usage",
+            "net_if_addrs",
+            "net_if_stats",
+            "process_iter",
+            "net_connections",
+            "systemctl_detect",
+            "systemctl_list_units",
+            "systemctl_show",
+            "serialize_snapshot",
+            "start_worker"
+          ],
+          "title": "Operation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "operation",
+        "message"
+      ],
+      "title": "CollectionError",
+      "type": "object"
+    },
+    "Collector": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "none"
+          ],
+          "title": "Coverage",
+          "type": "string"
+        },
+        "entity_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Entity Ids",
+          "type": "array"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/$defs/CollectionError"
+          },
+          "title": "Errors",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "finished_at": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "id": {
+          "enum": [
+            "host",
+            "processes",
+            "sockets",
+            "systemd"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "$ref": "#/$defs/Limitation"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "scope": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Scope",
+          "type": "string"
+        },
+        "started_at": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "unsupported",
+            "permission_denied",
+            "collection_error",
+            "skipped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "coverage",
+        "scope",
+        "started_at",
+        "finished_at",
+        "entity_ids",
+        "evidence_ids",
+        "errors",
+        "limitations",
+        "truncated"
+      ],
+      "title": "Collector",
+      "type": "object"
+    },
+    "Context": {
+      "additionalProperties": false,
+      "properties": {
+        "euid": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Euid"
+        },
+        "limitations": {
+          "items": {
+            "$ref": "#/$defs/Limitation"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "namespaces": {
+          "$ref": "#/$defs/Namespaces"
+        },
+        "uid": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Uid"
+        }
+      },
+      "required": [
+        "uid",
+        "euid",
+        "namespaces",
+        "limitations"
+      ],
+      "title": "Context",
+      "type": "object"
+    },
+    "Entity": {
+      "discriminator": {
+        "mapping": {
+          "filesystem": "#/$defs/FilesystemEntity",
+          "host_resources": "#/$defs/HostResourcesEntity",
+          "interface": "#/$defs/InterfaceEntity",
+          "process": "#/$defs/ProcessEntity",
+          "service": "#/$defs/ServiceEntity",
+          "socket": "#/$defs/SocketEntity"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/HostResourcesEntity"
+        },
+        {
+          "$ref": "#/$defs/FilesystemEntity"
+        },
+        {
+          "$ref": "#/$defs/InterfaceEntity"
+        },
+        {
+          "$ref": "#/$defs/ProcessEntity"
+        },
+        {
+          "$ref": "#/$defs/SocketEntity"
+        },
+        {
+          "$ref": "#/$defs/ServiceEntity"
+        }
+      ]
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "const": "observed",
+          "title": "Claim",
+          "type": "string"
+        },
+        "collected_at": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "collector_id": {
+          "enum": [
+            "host",
+            "processes",
+            "sockets",
+            "systemd"
+          ],
+          "title": "Collector Id",
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/EvidenceScalar"
+          },
+          "minProperties": 1,
+          "title": "Fields",
+          "type": "object"
+        },
+        "id": {
+          "pattern": "^e:[1-9][0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "$ref": "#/$defs/Limitation"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "source": {
+          "$ref": "#/$defs/EvidenceSource"
+        },
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "collector_id",
+        "collected_at",
+        "source",
+        "subject_id",
+        "claim",
+        "fields",
+        "limitations"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "EvidenceScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "EvidenceSource": {
+      "additionalProperties": false,
+      "properties": {
+        "locator": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Locator"
+        },
+        "name": {
+          "enum": [
+            "psutil.cpu_count",
+            "psutil.virtual_memory",
+            "psutil.disk_partitions",
+            "psutil.disk_usage",
+            "psutil.net_if_addrs",
+            "psutil.net_if_stats",
+            "psutil.process_iter",
+            "psutil.net_connections",
+            "os-release",
+            "platform.release",
+            "platform.node",
+            "systemctl.list-units",
+            "systemctl.show"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "api",
+            "file",
+            "command"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "title": "EvidenceSource",
+      "type": "object"
+    },
+    "FilesystemAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "title": "Device",
+          "type": "string"
+        },
+        "free_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Free Bytes"
+        },
+        "fs_type": {
+          "title": "Fs Type",
+          "type": "string"
+        },
+        "mountpoint": {
+          "title": "Mountpoint",
+          "type": "string"
+        },
+        "total_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Total Bytes"
+        },
+        "used_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Used Bytes"
+        }
+      },
+      "required": [
+        "device",
+        "mountpoint",
+        "fs_type",
+        "total_bytes",
+        "used_bytes",
+        "free_bytes"
+      ],
+      "title": "FilesystemAttributes",
+      "type": "object"
+    },
+    "FilesystemEntity": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "$ref": "#/$defs/FilesystemAttributes"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "filesystem",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "evidence_ids",
+        "kind",
+        "attributes"
+      ],
+      "title": "FilesystemEntity",
+      "type": "object"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "const": "observed",
+          "title": "Claim",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^f:[1-9][0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "review_action": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Review Action",
+          "type": "string"
+        },
+        "rule_id": {
+          "enum": [
+            "FS_USAGE_HIGH",
+            "SYSTEMD_FAILED"
+          ],
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "rule_version": {
+          "const": "1.0.0",
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "severity": {
+          "const": "warning",
+          "title": "Severity",
+          "type": "string"
+        },
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rule_id",
+        "rule_version",
+        "severity",
+        "subject_id",
+        "claim",
+        "evidence_ids",
+        "message",
+        "review_action"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "Host": {
+      "additionalProperties": false,
+      "properties": {
+        "boot_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UuidValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hostname": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Hostname"
+        },
+        "kernel": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Kernel"
+        },
+        "os_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Os Id"
+        },
+        "os_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Os Version"
+        }
+      },
+      "required": [
+        "os_id",
+        "os_version",
+        "kernel",
+        "hostname",
+        "boot_id"
+      ],
+      "title": "Host",
+      "type": "object"
+    },
+    "HostResourcesAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "cpu_logical": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cpu Logical"
+        },
+        "memory_available_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Memory Available Bytes"
+        },
+        "memory_total_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Memory Total Bytes"
+        }
+      },
+      "required": [
+        "cpu_logical",
+        "memory_total_bytes",
+        "memory_available_bytes"
+      ],
+      "title": "HostResourcesAttributes",
+      "type": "object"
+    },
+    "HostResourcesEntity": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "$ref": "#/$defs/HostResourcesAttributes"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "host_resources",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "evidence_ids",
+        "kind",
+        "attributes"
+      ],
+      "title": "HostResourcesEntity",
+      "type": "object"
+    },
+    "InterfaceAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "addresses": {
+          "items": {
+            "$ref": "#/$defs/Address"
+          },
+          "title": "Addresses",
+          "type": "array"
+        },
+        "is_up": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Is Up"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "is_up",
+        "addresses"
+      ],
+      "title": "InterfaceAttributes",
+      "type": "object"
+    },
+    "InterfaceEntity": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "$ref": "#/$defs/InterfaceAttributes"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "interface",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "evidence_ids",
+        "kind",
+        "attributes"
+      ],
+      "title": "InterfaceEntity",
+      "type": "object"
+    },
+    "Limitation": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 96,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject Id"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "Limitation",
+      "type": "object"
+    },
+    "Namespaces": {
+      "additionalProperties": false,
+      "properties": {
+        "mnt": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Mnt"
+        },
+        "net": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Net"
+        },
+        "pid": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pid"
+        }
+      },
+      "required": [
+        "pid",
+        "net",
+        "mnt"
+      ],
+      "title": "Namespaces",
+      "type": "object"
+    },
+    "ProcessAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Name"
+        },
+        "pid": {
+          "exclusiveMinimum": 0,
+          "title": "Pid",
+          "type": "integer"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "uid": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Uid"
+        }
+      },
+      "required": [
+        "pid",
+        "started_at",
+        "name",
+        "uid"
+      ],
+      "title": "ProcessAttributes",
+      "type": "object"
+    },
+    "ProcessEntity": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "$ref": "#/$defs/ProcessAttributes"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "process",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "evidence_ids",
+        "kind",
+        "attributes"
+      ],
+      "title": "ProcessEntity",
+      "type": "object"
+    },
+    "Relation": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "const": "observed",
+          "title": "Claim",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "from_id": {
+          "title": "From Id",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^r:[1-9][0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "rationale_code": {
+          "enum": [
+            "pid_create_time_match",
+            "main_pid_revalidated"
+          ],
+          "title": "Rationale Code",
+          "type": "string"
+        },
+        "to_id": {
+          "title": "To Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "owned_by",
+            "main_process"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "from_id",
+        "to_id",
+        "claim",
+        "evidence_ids",
+        "rationale_code"
+      ],
+      "title": "Relation",
+      "type": "object"
+    },
+    "ServiceAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "active_state": {
+          "title": "Active State",
+          "type": "string"
+        },
+        "load_state": {
+          "title": "Load State",
+          "type": "string"
+        },
+        "main_pid": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Main Pid"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "sub_state": {
+          "title": "Sub State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "load_state",
+        "active_state",
+        "sub_state"
+      ],
+      "title": "ServiceAttributes",
+      "type": "object"
+    },
+    "ServiceEntity": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "$ref": "#/$defs/ServiceAttributes"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "service",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "evidence_ids",
+        "kind",
+        "attributes"
+      ],
+      "title": "ServiceEntity",
+      "type": "object"
+    },
+    "SocketAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "enum": [
+            "ipv4",
+            "ipv6"
+          ],
+          "title": "Family",
+          "type": "string"
+        },
+        "local_address": {
+          "title": "Local Address",
+          "type": "string"
+        },
+        "local_port": {
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Local Port",
+          "type": "integer"
+        },
+        "pid": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pid"
+        },
+        "protocol": {
+          "enum": [
+            "tcp",
+            "udp"
+          ],
+          "title": "Protocol",
+          "type": "string"
+        },
+        "scope_id": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope Id"
+        },
+        "state": {
+          "enum": [
+            "listen",
+            "bound"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "protocol",
+        "family",
+        "local_address",
+        "local_port",
+        "state"
+      ],
+      "title": "SocketAttributes",
+      "type": "object"
+    },
+    "SocketEntity": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "$ref": "#/$defs/SocketAttributes"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "socket",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "evidence_ids",
+        "kind",
+        "attributes"
+      ],
+      "title": "SocketEntity",
+      "type": "object"
+    },
+    "UtcTimestamp": {
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$",
+      "type": "string"
+    },
+    "UuidValue": {
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "$id": "urn:infralens:snapshot:1.0.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assessment": {
+      "items": {
+        "$ref": "#/$defs/Assessment"
+      },
+      "title": "Assessment",
+      "type": "array"
+    },
+    "collectors": {
+      "items": {
+        "$ref": "#/$defs/Collector"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Collectors",
+      "type": "array"
+    },
+    "context": {
+      "$ref": "#/$defs/Context"
+    },
+    "entities": {
+      "items": {
+        "$ref": "#/$defs/Entity"
+      },
+      "title": "Entities",
+      "type": "array"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "finished_at": {
+      "$ref": "#/$defs/UtcTimestamp"
+    },
+    "host": {
+      "$ref": "#/$defs/Host"
+    },
+    "limitations": {
+      "items": {
+        "$ref": "#/$defs/Limitation"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "relations": {
+      "items": {
+        "$ref": "#/$defs/Relation"
+      },
+      "title": "Relations",
+      "type": "array"
+    },
+    "scan_id": {
+      "$ref": "#/$defs/UuidValue"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope_id": {
+      "$ref": "#/$defs/UuidValue"
+    },
+    "scope_origin": {
+      "enum": [
+        "operator",
+        "generated"
+      ],
+      "title": "Scope Origin",
+      "type": "string"
+    },
+    "started_at": {
+      "$ref": "#/$defs/UtcTimestamp"
+    },
+    "tool_version": {
+      "minLength": 1,
+      "title": "Tool Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "tool_version",
+    "scan_id",
+    "scope_id",
+    "scope_origin",
+    "started_at",
+    "finished_at",
+    "host",
+    "context",
+    "collectors",
+    "entities",
+    "evidence",
+    "relations",
+    "assessment",
+    "findings",
+    "limitations"
+  ],
+  "title": "Snapshot",
+  "type": "object",
+  "x-infralens-invariants": [
+    "Timestamps are RFC3339 UTC values ending in Z; finish times cannot precede start times.",
+    "Each snapshot contains exactly one host, processes, sockets, and systemd collector.",
+    "Collector status, coverage, truncation, errors, and data references must agree.",
+    "Entity, evidence, relation, assessment, and finding references resolve consistently within this snapshot.",
+    "Evidence fields equal the observed attributes of their subject; evidence is not raw command output.",
+    "Unknown host or entity fields require a limitation; an empty collection does not imply whole-host absence.",
+    "Rules are limited to FS_USAGE_HIGH and SYSTEMD_FAILED in schema version 1.0.0."
+  ]
+}

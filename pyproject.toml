@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=75,<81"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "infralens"
+version = "0.1.0.dev0"
+description = "Evidence-based local Linux infrastructure discovery"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "InfraLens contributors" }]
+dependencies = [
+    "psutil>=6,<8",
+    "pydantic>=2,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2,<2",
+    "jsonschema>=4,<5",
+    "pytest>=8,<9",
+    "ruff>=0.11,<1",
+]
+
+[project.scripts]
+infralens = "infralens.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "integration: exercises an installed CLI or a real local service",
+    "systemd: requires a Linux systemd service manager",
+    "docker: requires a local Docker daemon",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
