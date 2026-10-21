@@ -1,7 +1,7 @@
 # Plan incremental para Luna
 
 Cada fila es una tarea separada y revisable. No implementar todo en una sola entrega.
-T00–T09 están completos; los checks de filas posteriores son requisitos futuros.
+T00–T10 están completos; los checks de filas posteriores son requisitos futuros.
 
 | ID / dependencia | Objetivo y componentes | Cambios esperados | Pruebas / aceptación | Riesgo o decisión resuelta |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@ T00–T09 están completos; los checks de filas posteriores son requisitos futur
 | T07 / T03,T05 — completo | systemd.py | Detección de capacidad/runtime, servicios cargados, propiedades allowlisted y MainPID revalidado | 6 pruebas: unsupported, manager desconectado, allowlist/redacción, PID 0/malformado, vínculo estable/carrera y límite | C14 real aún no verificada; unidades cargadas no equivalen a todas instaladas |
 | T08 / T04b,T07 — completo | assessment.py | FS_USAGE_HIGH, SYSTEMD_FAILED, evaluaciones y referencias basadas sólo en snapshot | 7 pruebas: umbral exacto 90%, positivos/negativos, capacidad cero, dato faltante, estados systemd y unsupported | No health score ni puertos como riesgo |
 | T09 / T01,T08 — completo | reporting.py | Validación de snapshot, JSON acotado, escritura privada atómica, resumen saneado | 7 pruebas: JSON/0600, overwrite, symlink, falla/limpieza, carrera no-replace y ANSI/controles | Directorio hostil fuera de alcance; no dump arbitrario |
-| T10 / T04c,T06,T07,T09 | cli/scan integración | Conectar implementación, códigos, interrupción, límites | A1–A9, C12/C13; medir memoria/tiempo/tamaño, scan no root | No añadir flags fuera de spec para resolver bugs |
+| T10 / T04c,T06,T07,T09 — completo | cli/scan integración | Workers → snapshot validado → reglas → JSON privado y resumen; códigos e interrupción | 8 pruebas CLI + scan Linux no root; A1–A9; muestra Debian 13/Python 3.12: 0,85 s, RSS muestreado del árbol 62,3 MiB, JSON 49.449 bytes | Muestra puntual, no SLA; C14 real sigue pendiente |
 | T11 / T10 | CI y documentación de uso | Jobs base, wheel, capacidades systemd separadas, instrucciones instalación | C01–C13/C15 pasan, C14 pasa o capacidad queda sin verificar; conteos y versiones | No compatibilidad RHEL/WSL inventada; no artifacts sensibles |
 
 Orden recomendado: T00 → T01 → T02 → T03 → T04a/b/c → T05 → T06 → T07 → T08 →

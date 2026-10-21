@@ -19,11 +19,11 @@ from infralens.models import (
     Evidence,
     EvidenceSource,
     Limitation,
-    ProcessEntity,
     Relation,
     SocketAttributes,
     SocketEntity,
 )
+from infralens.process_refs import ProcessReference
 
 MAX_SOCKETS = 20_000
 MAX_SOCKET_RESULT_BYTES = 7 * 1024 * 1024
@@ -140,7 +140,7 @@ def collect(context: Mapping[str, object]) -> SocketCollectionResult:
             )
             continue
         process = process_entities.get(attributes.pid)
-        if process is None or process.attributes.started_at is None:
+        if process is None:
             limitations.append(
                 Limitation(
                     code="socket_owner_unverified",
@@ -152,7 +152,7 @@ def collect(context: Mapping[str, object]) -> SocketCollectionResult:
                 )
             )
             continue
-        validation, code = _revalidate_process(attributes.pid, process.attributes.started_at)
+        validation, code = _revalidate_process(attributes.pid, process.started_at)
         if code is not None:
             if code == "permission_denied":
                 _append_error_once(errors, _error(code))
@@ -413,25 +413,34 @@ def _normalize_connection(
     )
 
 
-def _process_entities(value: object) -> tuple[dict[int, ProcessEntity], bool]:
+def _process_entities(value: object) -> tuple[dict[int, ProcessReference], bool]:
     if value is None:
         return {}, False
     if isinstance(value, Mapping):
         value = value.get("entities")
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
         return {}, True
-    entities: dict[int, ProcessEntity] = {}
+    entities: dict[int, ProcessReference] = {}
     invalid = False
     for item in value:
         try:
-            entity = ProcessEntity.model_validate(item)
+            if isinstance(item, Mapping) and item.get("kind") == "process":
+                attributes = item.get("attributes")
+                if not isinstance(attributes, Mapping):
+                    raise TypeError
+                item = {
+                    "id": item.get("id"),
+                    "pid": attributes.get("pid"),
+                    "started_at": attributes.get("started_at"),
+                }
+            entity = ProcessReference.model_validate(item)
         except (ValidationError, TypeError):
             invalid = True
             continue
-        if entity.attributes.pid in entities:
+        if entity.pid in entities:
             invalid = True
             continue
-        entities[entity.attributes.pid] = entity
+        entities[entity.pid] = entity
     return entities, invalid
 
 

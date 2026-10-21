@@ -18,11 +18,11 @@ from infralens.models import (
     Evidence,
     EvidenceSource,
     Limitation,
-    ProcessEntity,
     Relation,
     ServiceAttributes,
     ServiceEntity,
 )
+from infralens.process_refs import ProcessReference
 from infralens.runner import CommandResult, run_command
 
 MAX_SERVICES = 2_000
@@ -206,7 +206,7 @@ def collect(context: Mapping[str, object]) -> SystemdCollectionResult:
         if attributes.main_pid is None:
             continue
         process = process_entities.get(attributes.main_pid)
-        if process is None or process.attributes.started_at is None:
+        if process is None:
             limitations.append(
                 Limitation(
                     code="service_main_process_unverified",
@@ -343,7 +343,7 @@ def _parse_show(output: bytes) -> tuple[tuple[ServiceAttributes, str] | None, bo
 def _revalidate_service_main_pid(
     unit_name: str,
     expected: ServiceAttributes,
-    process: ProcessEntity,
+    process: ProcessReference,
     deadline: float,
 ) -> tuple[bool, CollectionError | None]:
     refreshed = _show(unit_name, deadline)
@@ -364,37 +364,44 @@ def _revalidate_service_main_pid(
     ):
         return False, None
     try:
-        current_start = datetime.fromtimestamp(
-            psutil.Process(process.attributes.pid).create_time(), UTC
-        )
+        current_start = datetime.fromtimestamp(psutil.Process(process.pid).create_time(), UTC)
     except psutil.AccessDenied:
         return False, _error("permission_denied", "systemctl_show")
     except (psutil.NoSuchProcess, psutil.ZombieProcess):
         return False, None
     except (OSError, psutil.Error, OverflowError, ValueError, TypeError):
         return False, _error("io_error", "systemctl_show")
-    return current_start == process.attributes.started_at, None
+    return current_start == process.started_at, None
 
 
-def _process_entities(value: object) -> tuple[dict[int, ProcessEntity], bool]:
+def _process_entities(value: object) -> tuple[dict[int, ProcessReference], bool]:
     if value is None:
         return {}, False
     if isinstance(value, Mapping):
         value = value.get("entities")
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
         return {}, True
-    entities: dict[int, ProcessEntity] = {}
+    entities: dict[int, ProcessReference] = {}
     invalid = False
     for item in value:
         try:
-            entity = ProcessEntity.model_validate(item)
+            if isinstance(item, Mapping) and item.get("kind") == "process":
+                attributes = item.get("attributes")
+                if not isinstance(attributes, Mapping):
+                    raise TypeError
+                item = {
+                    "id": item.get("id"),
+                    "pid": attributes.get("pid"),
+                    "started_at": attributes.get("started_at"),
+                }
+            entity = ProcessReference.model_validate(item)
         except (ValidationError, TypeError):
             invalid = True
             continue
-        if entity.attributes.pid in entities:
+        if entity.pid in entities:
             invalid = True
             continue
-        entities[entity.attributes.pid] = entity
+        entities[entity.pid] = entity
     return entities, invalid
 
 

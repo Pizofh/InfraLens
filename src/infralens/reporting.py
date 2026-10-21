@@ -18,6 +18,10 @@ MAX_STRING_LENGTH = 4_096
 _ANSI_ESCAPE = re.compile(r"\x1b(?:\][^\x07]*(?:\x07|\x1b\\)|\[[0-?]*[ -/]*[@-~]|[@-Z\\-_])")
 
 
+class OutputPathError(ValueError):
+    """The selected output path cannot be used as a regular local file."""
+
+
 def write_snapshot(snapshot: Snapshot, path: str | Path, *, overwrite: bool = False) -> Path:
     """Validate and atomically persist a private UTF-8 JSON snapshot."""
     validated = Snapshot.model_validate(snapshot.model_dump(mode="python"))
@@ -26,15 +30,16 @@ def write_snapshot(snapshot: Snapshot, path: str | Path, *, overwrite: bool = Fa
     encoded = (json.dumps(payload, ensure_ascii=False, allow_nan=False, indent=2) + "\n").encode(
         "utf-8"
     )
+
     if len(encoded) > MAX_JSON_BYTES:
         raise ValueError("snapshot exceeds the 16 MiB JSON limit")
 
     destination = Path(path)
     if not destination.name or destination.name in {".", ".."}:
-        raise ValueError("output path must name a file")
+        raise OutputPathError("output path must name a file")
     parent = destination.parent
     if not stat.S_ISDIR(os.stat(parent, follow_symlinks=False).st_mode):
-        raise NotADirectoryError("output parent is not a directory")
+        raise OutputPathError("output parent is not a directory")
     _validate_destination(destination, overwrite=overwrite)
 
     descriptor, temporary_name = tempfile.mkstemp(
@@ -79,9 +84,28 @@ def format_summary(snapshot: Snapshot) -> str:
     state_counts = {state: 0 for state in ("triggered", "not_triggered", "not_evaluable")}
     for item in validated.assessment:
         state_counts[item.state] += 1
+    collector_status_counts = {
+        status: 0
+        for status in ("ok", "unsupported", "permission_denied", "collection_error", "skipped")
+    }
+    for collector in validated.collectors:
+        collector_status_counts[collector.status] += 1
 
     lines = [
         f"InfraLens scan {_terminal_text(str(validated.scan_id))}",
+        "Platform: "
+        + " ".join(
+            _terminal_text(item)
+            for item in (validated.host.os_id, validated.host.os_version, validated.host.kernel)
+            if item is not None
+        ),
+        f"Scope: {_terminal_text(str(validated.scope_id))} "
+        f"({_terminal_text(validated.scope_origin)})",
+        "Time: "
+        f"{_terminal_text(validated.started_at.isoformat())} to "
+        f"{_terminal_text(validated.finished_at.isoformat())}",
+        "Collector counts: "
+        + ", ".join(f"{status}={count}" for status, count in collector_status_counts.items()),
         "Collectors:",
         *collector_lines,
         "Assessment: " + ", ".join(f"{state}={count}" for state, count in state_counts.items()),
@@ -91,9 +115,16 @@ def format_summary(snapshot: Snapshot) -> str:
         severity = _terminal_text(finding.severity)
         rule = _terminal_text(finding.rule_id)
         subject = _terminal_text(finding.subject_id)
-        message = _terminal_text(finding.message)
+        evidence = ", ".join(_terminal_text(item) for item in finding.evidence_ids)
+        message = f"{_terminal_text(finding.message)}; evidence: {evidence}"
         action = _terminal_text(finding.review_action)
         lines.append(f"  [{severity}] {rule} ({subject}): {message} — {action}")
+    if validated.scope_origin == "generated":
+        lines.append("Scope ID was generated; it does not verify host identity.")
+    lines.append(
+        "Snapshot may contain sensitive host, address, process, mount, and service data; "
+        "review before sharing."
+    )
     return "\n".join(lines)
 
 
@@ -103,9 +134,9 @@ def _validate_destination(destination: Path, *, overwrite: bool) -> None:
     except FileNotFoundError:
         return
     if stat.S_ISLNK(mode):
-        raise ValueError("output destination must not be a symbolic link")
+        raise OutputPathError("output destination must not be a symbolic link")
     if not stat.S_ISREG(mode):
-        raise ValueError("output destination must be a regular file")
+        raise OutputPathError("output destination must be a regular file")
     if not overwrite:
         raise FileExistsError("output file already exists")
 

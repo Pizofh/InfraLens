@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from infralens.scan import (
+    MAX_CONTEXT_BYTES,
     MAX_WORKER_RESULT_BYTES,
     WORKER_ADDRESS_SPACE_BYTES,
     CollectorTarget,
@@ -83,6 +84,14 @@ def test_worker_result_is_bounded() -> None:
     assert result.state == "collection_error"
     assert result.error_code == "worker_error"
     assert result.message == "worker result exceeded the IPC size limit"
+
+
+def test_worker_context_is_bounded_before_starting_process() -> None:
+    with pytest.raises(ValueError):
+        run_collectors(
+            [_target("return_context")],
+            {"value": "x" * (MAX_CONTEXT_BYTES + 1)},
+        )
 
 
 @pytest.mark.integration

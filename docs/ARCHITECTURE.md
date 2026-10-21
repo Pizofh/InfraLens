@@ -25,10 +25,9 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 ## Estructura objetivo del MVP; implementar por tarea
 
-T00–T09 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
+T00–T10 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
 collectors host, procesos, sockets, systemd aislado, reglas puras de assessment y
-reporting seguro. La integración del flujo completo pertenece a T10; no adelantar
-módulos de tareas posteriores.
+reporting seguro y flujo completo de scan. T11 queda para CI y documentación final.
 
 ```text
 pyproject.toml
@@ -78,6 +77,9 @@ si devuelve un objeto truncado. Una excepción inesperada se registra como error
 saneado del colector y el scan continúa si queda presupuesto. Los ordinales de
 evidencia de cada worker son locales; el padre los reenumera de forma determinista
 al ensamblar el snapshot.
+La primera fase recolecta host y procesos; la segunda pasa a sockets/systemd sólo
+referencias compactas de PID e inicio de proceso para validar relaciones. El contexto
+IPC es JSON y queda limitado a 2 MiB; evidencia y entidades se reenumeran globalmente.
 
 `multiprocessing` con contexto spawn permite limitar llamadas de psutil o I/O
 bloqueante que un timeout de subprocess no cubre. El worker devuelve un único

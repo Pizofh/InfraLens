@@ -1,9 +1,10 @@
 # InfraLens: propósito y alcance
 
-Estado: MVP en construcción. T00–T09 implementan CLI inicial, modelos/schema, runner,
+Estado: MVP en construcción. T00–T10 implementan CLI inicial, modelos/schema, runner,
 supervisor de workers y recolección aislada de OS, recursos, contexto, filesystems,
 interfaces, procesos, sockets, servicios systemd opcionales, assessment puro y
-reporting seguro. La integración del flujo sigue pendiente; `scan` aún es un placeholder.
+reporting seguro e integración de `scan`. El gate de CI y la validación final siguen
+pendientes.
 Fecha inicial del diseño: 2026-10-21.
 
 ## Problema y usuario

@@ -124,4 +124,10 @@ def test_summary_removes_ansi_and_control_characters_from_findings() -> None:
     assert "\x1b" not in summary
     assert "\x7f" not in summary
     assert "disk REDNEXT" in summary
+    assert "Platform: ubuntu 24.04 6.8.0" in summary
+    assert "Scope: 39cb65cb-a089-4208-82f7-d636cdb7bef1 (operator)" in summary
+    assert "Time:" in summary
+    assert "Collector counts:" in summary
+    assert "evidence: e:1" in summary
     assert "Findings: 1" in summary
+    assert "review before sharing" in summary
