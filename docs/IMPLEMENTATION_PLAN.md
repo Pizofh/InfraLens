@@ -1,7 +1,7 @@
 # Plan incremental para Luna
 
 Cada fila es una tarea separada y revisable. No implementar todo en una sola entrega.
-T00–T04b están completos; los checks de filas posteriores son requisitos futuros.
+T00–T05 están completos; los checks de filas posteriores son requisitos futuros.
 
 | ID / dependencia | Objetivo y componentes | Cambios esperados | Pruebas / aceptación | Riesgo o decisión resuelta |
 |---|---|---|---|---|
@@ -12,7 +12,7 @@ T00–T04b están completos; los checks de filas posteriores son requisitos futu
 | T04a / T03 — completo | collectors/host.py OS y recursos | Parser acotado de os-release sin shell, kernel/hostname/boot ID, CPU/memoria, UID/EUID y namespaces; evidencia del host y recursos | 7 pruebas: Ubuntu/RHEL sintéticos, syntax adversaria no ejecutada, fallback, datos malformados, permiso denegado y namespace desconocido | Sin source del archivo ni machine-id; RHEL real sigue sin probar |
 | T04b / T04a — completo | host.py filesystems | disk_partitions(all=False), disk_usage por montaje, IDs/evidencia deterministas y máximo 256 | 5 pruebas: orden/evidencia, error por montaje, enumeración denegada, límite truncado, capacidad cero y entrada inválida | El método de psutil filtra su alcance; no inspeccionar red ni corregir permisos |
 | T04c / T04a — completo | host.py interfaces | net_if_addrs/net_if_stats, IPs/prefijos canónicos, zonas IPv6 y máximo 256 | 6 pruebas: IP/máscara/zona, error independiente de cada fuente, zona no resuelta, dirección inválida y límite truncado | Se omiten familias no IP/MAC; sin inferir exposición |
-| T05 / T03,T04a | processes.py | Inventario mínimo y manejo de desaparición | C04/C05, UID desconocido, truncamiento, canarios argv/env | Nunca leer argv/env; PID no es identidad |
+| T05 / T03,T04a — completo | processes.py | PID, create_time, nombre y UID observables; límite 10.000; fallos por campo y carrera conservan datos | 6 pruebas: campos/evidencia ordenados, desaparición, permiso UID, iterator denegado, truncamiento y canarios de datos prohibidos | Sólo lectura; no argv/env/cwd/open_files; PID no es identidad entre scans |
 | T06 / T05 | sockets.py | TCP LISTEN/UDP bound y relación owned_by con revalidación | C05/C06/C13, PID null/reutilizado, sin root partial | No conexiones salientes ni etiquetas de aplicación |
 | T07 / T03,T05 | systemd.py | Detección de capacidad, list-units/show allowlist, main_process verificado | C07; fixtures y C14 en host capaz antes de declarar soporte | Cargadas no equivale a todas instaladas; sin bus no se oculta error |
 | T08 / T04b,T07 | assessment.py | FS_USAGE_HIGH, SYSTEMD_FAILED, evaluaciones y referencias | C08: límite 90%, negativos, no evaluables y cobertura parcial por objeto | No health score ni puertos como riesgo |

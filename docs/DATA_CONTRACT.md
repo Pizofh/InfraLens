@@ -94,6 +94,13 @@ netmasks contiguas se convierten a prefijo y zonas IPv6 numéricas se guardan co
 lo permite). Cada fuente genera evidencia por interfaz. Si una fuente falla, se
 conservan los datos de la otra y se marca cobertura parcial; direcciones o estado no
 observados llevan limitación explícita.
+T05 recorre procesos visibles sin solicitar campos sensibles. `process_iter` puede
+omitir procesos fuera del alcance del usuario y un proceso puede desaparecer entre
+lecturas; ambos casos limitan la cobertura, no prueban ausencia. Se conserva el PID
+con los demás campos observados cuando una lectura posterior falla. `started_at` se
+normaliza a UTC; nombre y UID nulos llevan limitación por entidad. El límite de 10.000
+entradas marca truncamiento y ordena las entidades finales por PID. La evidencia usa
+`psutil.process_iter` y sólo repite los escalares observados de la entidad.
 
 IDs de entidades y evidencia no son identidades entre snapshots. Un proceso se
 identifica sólo durante el scan por pid+started_at+contexto de arranque; sin tiempo
