@@ -113,6 +113,14 @@ que cambie la identidad del servicio. Si una entrada tiene el mismo nombre dupli
 en cualquier lado, el matching la deja ambigua; no escoge una instancia ni la expone
 como alta o baja. La cobertura del colector y la clasificación final quedan para D05.
 
+## D13 — Identidad de listener en snapshots
+
+La clave natural es protocolo, familia, dirección local, puerto y zona IPv6 (`scope_id`).
+PID de propietario y UUID de entidad son locales/volátiles y no definen el listener.
+Duplicados en una instantánea se dejan ambiguos para no crear un emparejamiento
+arbitrario. TCP listen y UDP bound son tipos distintos por protocolo; no se infiere
+accesibilidad externa ni dependencia de proceso.
+
 ## Capacidades existentes y posición de InfraLens
 
 | Herramienta | Capacidad real relevante | Lo que no resuelve automáticamente | Decisión |

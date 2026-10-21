@@ -81,6 +81,8 @@ para dos funciones. Tipos explícitos y funciones pequeñas bastan.
 - `match_services(before, after) -> ServiceMatching`: empareja por nombre de unidad,
   deja claves de un solo lado para clasificación posterior y marca duplicados como
   ambiguos; no decide added/removed ni compara estado.
+- `match_sockets(before, after) -> SocketMatching`: empareja por protocolo, familia,
+  dirección local, puerto y zona IPv6; omite PID de la clave y deja duplicados ambiguos.
 
 El orquestador genera UUID y tiempo UTC, caracteriza contexto host/namespace,
 ejecuta secuencialmente host, processes, sockets y systemd en workers separados,

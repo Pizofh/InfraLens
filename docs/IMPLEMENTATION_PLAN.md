@@ -45,7 +45,7 @@ corporativo para suplir un lab ausente.
 
 | Entrega | Pasos pequeños y dependencias | Gate |
 |---|---|---|
-| 0.2 diff | **D01 lector — completo; D02 preflight scope/contexto — completo; D03 matching de servicios — completo**; D04 listeners — siguiente; D05 salida added/removed/changed/not_comparable | Sin falsos removed cuando falta cobertura, mismo namespace; ignorar PID/UUID y recursos volátiles |
+| 0.2 diff | **D01 lector — completo; D02 preflight scope/contexto — completo; D03 servicios — completo; D04 matching de listeners — completo**; D05 salida added/removed/changed/not_comparable — siguiente | Sin falsos removed cuando falta cobertura, mismo namespace; ignorar PID/UUID y recursos volátiles |
 | 0.3 Docker opcional | Decisión de privilegio; proyección de campos; colector explícito; lab on/off/denied | Sin env/labels/inspect completo persistido, sin instalar daemon ni conceder docker group |
 | SSH | Inventario autorizado; OpenSSH BatchMode/host keys; empaquetado remoto; recuperar JSON; timeouts por host | Ningún host desconocido aceptado automáticamente; credenciales fuera del snapshot |
 | Mapping | Casos reales; contratos explícitos de arista; fuente y verificación; revisión humana | No equiparar conexión con dependencia; no escaneo lateral |
@@ -65,6 +65,10 @@ D03 entrega `match_services(before, after)`: usa sólo `ServiceAttributes.name`;
 IDs locales, estado y PID. Devuelve matches y claves de un solo lado en orden estable.
 Un nombre duplicado en cualquiera de los snapshots queda ambiguo y no se asigna como
 matched, added o removed.
+
+D04 entrega `match_sockets(before, after)`: usa protocolo, familia, dirección local,
+puerto y scope_id IPv6; ignora PID y ordena resultados por clave. Claves duplicadas
+quedan ambiguas y no se emparejan.
 
 Para diff, scope UUID igual no basta si cambió namespace o no puede verificarse:
 por defecto rechazar comparación global; en una versión futura permitir override

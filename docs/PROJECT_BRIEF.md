@@ -5,7 +5,7 @@ supervisor de workers y recolección aislada de OS, recursos, contexto, filesyst
 interfaces, procesos, sockets, servicios systemd opcionales, assessment puro y
 reporting seguro, integración de `scan` y CI base. C14 pasó en el runner Ubuntu con
 systemd real. La entrega 0.2 ya incluye lector compatible, preflight conservador y
-matching de servicios; todavía no calcula ni presenta diferencias.
+matching natural de servicios/listeners; aún no clasifica ni presenta diferencias.
 Fecha inicial del diseño: 2026-10-21.
 
 ## Problema y usuario
