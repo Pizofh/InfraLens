@@ -81,6 +81,12 @@ confirmada. IPs normalizadas con ipaddress; IPv6 incluye scope_id separado si ex
 Prefijos desconocidos son null. No excluir loopback o tmpfs silenciosamente: declarar
 que disk_partitions(all=False) tiene su propio filtro y no es censo de mounts.
 Campos nulos llevan limitación con subject_id y nombre de campo en el mensaje.
+T04b ordena los montajes por mountpoint, dispositivo y tipo, asigna IDs locales
+deterministas y limita el resultado a 256. Por cada filesystem hay evidencia de
+`psutil.disk_partitions`; si usage se lee, otra evidencia `psutil.disk_usage` contiene
+total/used/free. Un fallo de usage conserva la entidad y la evidencia de identidad,
+con capacidades nulas y limitaciones por campo. Superar el máximo marca truncated y
+cobertura parcial; una capacidad total igual a cero es válida y no implica división.
 
 IDs de entidades y evidencia no son identidades entre snapshots. Un proceso se
 identifica sólo durante el scan por pid+started_at+contexto de arranque; sin tiempo

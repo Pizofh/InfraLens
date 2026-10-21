@@ -23,6 +23,8 @@ from infralens.models import (
     Entity,
     Evidence,
     EvidenceSource,
+    FilesystemAttributes,
+    FilesystemEntity,
     Host,
     HostResourcesAttributes,
     HostResourcesEntity,
@@ -31,9 +33,13 @@ from infralens.models import (
 )
 
 MAX_OS_RELEASE_BYTES = 64 * 1024
+MAX_FILESYSTEMS = 256
 OS_RELEASE_PATHS = (Path("/etc/os-release"), Path("/usr/lib/os-release"))
 BOOT_ID_PATH = Path("/proc/sys/kernel/random/boot_id")
-HOST_SCOPE = "T04a OS identity, kernel, CPU/memory, UID/EUID, and pid/net/mnt namespaces"
+HOST_SCOPE = (
+    "OS identity, kernel, CPU/memory, UID/EUID, pid/net/mnt namespaces, and up to 256 "
+    "filesystems returned by psutil.disk_partitions(all=False)"
+)
 _OS_RELEASE_KEY = re.compile(r"[A-Z][A-Z0-9_]*\Z")
 _BOOT_ID = re.compile(
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\Z"
@@ -41,7 +47,7 @@ _BOOT_ID = re.compile(
 
 
 class HostCollectionResult(BaseModel):
-    """Normalized T04a data ready for later snapshot assembly."""
+    """Normalized host data ready for later snapshot assembly."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
@@ -188,6 +194,17 @@ def collect(_context: Mapping[str, object]) -> HostCollectionResult:
             limitations.append(_resource_limitation(field_name, None))
 
     evidence.extend(resource_evidence)
+    (
+        filesystem_entities,
+        filesystem_evidence,
+        filesystem_errors,
+        filesystem_limitations,
+        truncated,
+    ) = _collect_filesystems(evidence_ids)
+    entities.extend(filesystem_entities)
+    evidence.extend(filesystem_evidence)
+    errors.extend(filesystem_errors)
+    limitations.extend(filesystem_limitations)
     all_limitations = [*limitations, *context_limitations]
     if not evidence and not errors:
         errors.append(_error("io_error", "read_host_resources"))
@@ -200,6 +217,7 @@ def collect(_context: Mapping[str, object]) -> HostCollectionResult:
         errors
         or any(item.code != "os_release_fallback" for item in limitations)
         or context_limitations
+        or truncated
     ):
         coverage = "partial"
     else:
@@ -216,7 +234,7 @@ def collect(_context: Mapping[str, object]) -> HostCollectionResult:
         evidence_ids=[item.id for item in evidence],
         errors=errors,
         limitations=limitations,
-        truncated=False,
+        truncated=truncated,
     )
     return HostCollectionResult(
         host=host,
@@ -412,6 +430,189 @@ def _read_memory() -> tuple[int | None, int | None, CollectionError | None]:
     ):
         return None, None, None
     return total, available, None
+
+
+def _collect_filesystems(
+    evidence_ids,
+) -> tuple[list[FilesystemEntity], list[Evidence], list[CollectionError], list[Limitation], bool]:
+    errors: list[CollectionError] = []
+    limitations: list[Limitation] = []
+    valid_partitions: list[tuple[str, str, str]] = []
+    try:
+        partitions = psutil.disk_partitions(all=False)
+    except (psutil.AccessDenied, PermissionError):
+        return (
+            [],
+            [],
+            [_filesystem_error("permission_denied", "disk_partitions")],
+            [_filesystem_limitation("filesystem partition list", None)],
+            False,
+        )
+    except (OSError, psutil.Error, ValueError):
+        return (
+            [],
+            [],
+            [_filesystem_error("io_error", "disk_partitions")],
+            [_filesystem_limitation("filesystem partition list", None)],
+            False,
+        )
+
+    try:
+        partition_rows = list(partitions)
+    except (OSError, psutil.Error, ValueError, TypeError):
+        return (
+            [],
+            [],
+            [_filesystem_error("io_error", "disk_partitions")],
+            [_filesystem_limitation("filesystem partition list", None)],
+            False,
+        )
+
+    for partition in partition_rows:
+        values = tuple(
+            _bounded_fs_string(getattr(partition, name, None))
+            for name in ("device", "mountpoint", "fstype")
+        )
+        if any(value is None for value in values):
+            errors.append(_filesystem_error("parse_error", "disk_partitions"))
+            limitations.append(_filesystem_limitation("filesystem identity", None))
+            continue
+        device, mountpoint, fs_type = values
+        valid_partitions.append((device, mountpoint, fs_type))  # type: ignore[arg-type]
+
+    valid_partitions.sort(key=lambda item: (item[1], item[0], item[2]))
+    truncated = len(valid_partitions) > MAX_FILESYSTEMS
+    if truncated:
+        valid_partitions = valid_partitions[:MAX_FILESYSTEMS]
+        limitations.append(
+            Limitation(
+                code="filesystem_limit_reached",
+                message=f"Filesystem collection was limited to {MAX_FILESYSTEMS} mounts.",
+            )
+        )
+
+    entities: list[FilesystemEntity] = []
+    evidence: list[Evidence] = []
+    for index, (device, mountpoint, fs_type) in enumerate(valid_partitions, start=1):
+        entity_id = f"filesystem:{index}"
+        try:
+            usage = psutil.disk_usage(mountpoint)
+            total = usage.total
+            used = usage.used
+            free = usage.free
+            if not _valid_filesystem_usage(total, used, free):
+                raise ValueError
+        except (psutil.AccessDenied, PermissionError):
+            total = used = free = None
+            errors.append(_filesystem_error("permission_denied", "disk_usage"))
+            limitations.extend(
+                _filesystem_limitation(field, entity_id)
+                for field in ("total_bytes", "used_bytes", "free_bytes")
+            )
+        except (OSError, psutil.Error):
+            total = used = free = None
+            errors.append(_filesystem_error("io_error", "disk_usage"))
+            limitations.extend(
+                _filesystem_limitation(field, entity_id)
+                for field in ("total_bytes", "used_bytes", "free_bytes")
+            )
+        except (ValueError, AttributeError, TypeError):
+            total = used = free = None
+            errors.append(_filesystem_error("parse_error", "disk_usage"))
+            limitations.extend(
+                _filesystem_limitation(field, entity_id)
+                for field in ("total_bytes", "used_bytes", "free_bytes")
+            )
+
+        attributes = FilesystemAttributes(
+            device=device,
+            mountpoint=mountpoint,
+            fs_type=fs_type,
+            total_bytes=total,
+            used_bytes=used,
+            free_bytes=free,
+        )
+        partition_evidence = Evidence(
+            id=f"e:{next(evidence_ids)}",
+            collector_id="host",
+            collected_at=datetime.now(UTC),
+            source=EvidenceSource(type="api", name="psutil.disk_partitions"),
+            subject_id=entity_id,
+            claim="observed",
+            fields={"device": device, "mountpoint": mountpoint, "fs_type": fs_type},
+            limitations=[],
+        )
+        entity_evidence = [partition_evidence]
+        evidence.append(partition_evidence)
+        if total is not None and used is not None and free is not None:
+            usage_evidence = Evidence(
+                id=f"e:{next(evidence_ids)}",
+                collector_id="host",
+                collected_at=datetime.now(UTC),
+                source=EvidenceSource(type="api", name="psutil.disk_usage"),
+                subject_id=entity_id,
+                claim="observed",
+                fields={
+                    "total_bytes": total,
+                    "used_bytes": used,
+                    "free_bytes": free,
+                },
+                limitations=[],
+            )
+            entity_evidence.append(usage_evidence)
+            evidence.append(usage_evidence)
+        evidence_ids_for_entity = [item.id for item in entity_evidence]
+        entities.append(
+            FilesystemEntity(
+                id=entity_id,
+                kind="filesystem",
+                attributes=attributes,
+                evidence_ids=evidence_ids_for_entity,
+            )
+        )
+    return entities, evidence, errors, limitations, truncated
+
+
+def _bounded_fs_string(value: object) -> str | None:
+    if (
+        not isinstance(value, str)
+        or not value
+        or len(value) > 4096
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        return None
+    return value
+
+
+def _valid_filesystem_usage(total: object, used: object, free: object) -> bool:
+    return (
+        all(
+            isinstance(value, int) and not isinstance(value, bool) and value >= 0
+            for value in (total, used, free)
+        )
+        and used <= total
+        and free <= total
+    )
+
+
+def _filesystem_error(
+    code: Literal["permission_denied", "io_error", "parse_error"],
+    operation: Literal["disk_partitions", "disk_usage"],
+) -> CollectionError:
+    message = {
+        "permission_denied": "Permission denied while reading filesystem metadata.",
+        "io_error": "Filesystem metadata could not be read.",
+        "parse_error": "Filesystem metadata did not match the expected format.",
+    }[code]
+    return CollectionError(code=code, operation=operation, message=message)
+
+
+def _filesystem_limitation(field_name: str, subject_id: str | None) -> Limitation:
+    return Limitation(
+        code="filesystem_field_unavailable",
+        message=f"Filesystem field {field_name} is unavailable or invalid.",
+        subject_id=subject_id,
+    )
 
 
 def _host_evidence(
