@@ -1,10 +1,10 @@
 # Especificación normativa MVP 0.1
 
 Los MUST de recolección de esta especificación son criterios de aceptación
-pendientes; T00–T07 implementan CLI, contrato, runner, supervisor y collectors aislados
+pendientes; T00–T08 implementan CLI, contrato, runner, supervisor, collectors aislados
 de OS, recursos, contexto, filesystems, interfaces, procesos, sockets y servicios
-systemd. Assessment e integración aún no están conectados; `scan` sigue siendo un
-placeholder. Plataforma objetivo Linux
+systemd y reglas puras de assessment. Reporting e integración aún no están conectados;
+`scan` sigue siendo un placeholder. Plataforma objetivo Linux
 con Python 3.12; primera validación Ubuntu 24.04. RHEL 9 y WSL2 requieren pruebas
 explícitas.
 
@@ -62,7 +62,7 @@ del proceso si los colectores cumplieron su ámbito; se declara en assessment.
 
 | ID | Condición | Evidencia y límites | Revisión sugerida |
 |---|---|---|---|
-| FS_USAGE_HIGH | total_bytes >0 y used_bytes/total_bytes >=0.90 | muestra disk_usage con fecha; evaluar cada mount legible, incluso con cobertura parcial en otros | Revisar crecimiento y capacidad; no borrar datos |
+| FS_USAGE_HIGH | total_bytes >0 y `used_bytes * 100 >= total_bytes * 90` | evidencia disk_usage del mismo mount; evaluación independiente por filesystem, incluso con cobertura parcial en otros | Revisar crecimiento y capacidad; no borrar datos |
 | SYSTEMD_FAILED | unidad cargada con ActiveState=failed | muestra de propiedades y unidad; no implica causa raíz | Revisar logs y contexto manualmente |
 
 Ambos severity=warning, sin score agregado. Una regla devuelve not_evaluable cuando

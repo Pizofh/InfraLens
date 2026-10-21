@@ -125,6 +125,26 @@ lleva limitación. Para `main_process`, el segundo `show` debe repetir la misma 
 MainPID y estados; luego create_time del proceso debe coincidir con el inventario
 previo. Nunca se incluyen Description, Environment, ExecStart ni stderr.
 
+T08 evalúa sólo observaciones validadas del snapshot y no consulta el host. Cada
+filesystem observable recibe una evaluación `FS_USAGE_HIGH`: sólo se compara cuando
+total y used son conocidos, existe evidencia `psutil.disk_usage` del mismo sujeto
+que contiene ambos campos y total es mayor que cero. El umbral es exacto e inclusivo,
+sin redondeo: `used_bytes * 100 >= total_bytes * 90`; uso bajo devuelve
+`not_triggered`. Capacidad cero devuelve `not_evaluable/zero_total_capacity`, campos
+nulos `filesystem_usage_unavailable` y evidencia ausente `evidence_unavailable`.
+Un filesystem no evaluable no impide evaluar los demás. Sin entidades filesystem,
+la evaluación global usa `collector_unsupported`, `collector_no_coverage` o
+`no_subjects_observed` según estado/cobertura del colector host.
+
+Cada servicio observado recibe `SYSTEMD_FAILED` sólo si evidencia `systemctl.show`
+del mismo sujeto contiene `active_state`; `failed` crea hallazgo warning y cualquier
+otro estado observado da `not_triggered`. Falta de evidencia produce
+`not_evaluable/evidence_unavailable`. Sin servicios, el estado global usa los mismos
+motivos de colector que la regla de filesystem. Las dos reglas conservan evaluaciones
+por objeto aunque la cobertura global sea parcial; nunca extrapolan a entidades no
+observadas. Hallazgos incluyen únicamente IDs de evidencia del sujeto y los campos
+que sustentan la regla. Por ahora no hay score agregado ni reglas de puertos.
+
 IDs de entidades y evidencia no son identidades entre snapshots. Un proceso se
 identifica sólo durante el scan por pid+started_at+contexto de arranque; sin tiempo
 no enlazar. Para diff: filesystem=(mountpoint,device,fs_type), servicio=name,

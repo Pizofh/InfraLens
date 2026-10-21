@@ -25,9 +25,10 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 ## Estructura objetivo del MVP; implementar por tarea
 
-T00–T07 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
-collectors host, procesos, sockets y systemd aislados. Assessment y flujo completo
-pertenecen a T08–T10; no adelantar módulos de tareas posteriores.
+T00–T08 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
+collectors host, procesos, sockets, systemd aislado y reglas puras de assessment.
+Reporting e integración del flujo completo pertenecen a T09–T10; no adelantar módulos
+de tareas posteriores.
 
 ```text
 pyproject.toml

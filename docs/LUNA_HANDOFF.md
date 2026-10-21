@@ -2,22 +2,21 @@
 
 ## Estado y siguiente tarea exacta
 
-T00–T07 ya están implementadas: bootstrap, schema/validación del snapshot, runner,
-supervisor de workers, collectors host, procesos, sockets y systemd.
+T00–T08 ya están implementadas: bootstrap, schema/validación del snapshot, runner,
+supervisor de workers, collectors host, procesos, sockets, systemd y reglas puras de
+assessment.
 `scan` todavía devuelve “not implemented”; el supervisor aún no está conectado al CLI.
-La siguiente tarea es **T08**: reglas FS_USAGE_HIGH y SYSTEMD_FAILED con estados
-not_evaluable. Antes, lee
+La siguiente tarea es **T09**: reporting JSON seguro y resumen. Antes, lee
 [brief](PROJECT_BRIEF.md), [MVP](MVP_SPEC.md), [contrato](DATA_CONTRACT.md) y
 [plan](IMPLEMENTATION_PLAN.md). Inspecciona Git status e instrucciones locales.
 
 El entorno usa Python 3.12, uv y lock congelado. Ejecuta `export
 UV_CACHE_DIR=/tmp/uv-infralens-cache UV_LINK_MODE=copy`, `uv sync --frozen --extra dev`
-y verifica con pytest/Ruff/build. T03–T07 están probadas de forma aislada; el
+y verifica con pytest/Ruff/build. T03–T08 están probadas de forma aislada; el
 comando `scan` aún no está conectado y no produce snapshots del host.
 
 ## Orden restante
 
-T08 reglas,
 T09 reporting, T10 integración y T11 CI. Cada tarea incluye pruebas y criterios en
 el plan. Termina una entrega verificable antes de abrir otra; no implementes
 transportes o Docker por adelantado. No solicites confirmación para decisiones ya
@@ -70,7 +69,7 @@ normal es dato del scan, no motivo para pedir elevación.
 
 Las tareas cloud ya están aisladas. Usa el checkout existente en
 `/workspace/InfraLens`; no crees worktrees salvo petición explícita. Python 3.12,
-uv y dependencias congeladas están disponibles. Los checks T00–T07 pasan; el
+uv y dependencias congeladas están disponibles. Los checks T00–T08 pasan; el
 commit actual está en `main` y el borrador cloud guarda esa referencia. No hay
 servicio persistente que arrancar ni credenciales necesarias para el flujo local.
 El usuario autorizó commits revisables y push a `origin/main` al terminar cada tarea

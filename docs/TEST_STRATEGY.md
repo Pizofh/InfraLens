@@ -3,10 +3,11 @@
 ## Estado y presupuesto
 
 Este documento prescribe pruebas futuras para las capacidades todavía no
-implementadas. T00–T07 tienen una suite ejecutada de 80 pruebas; cubre CLI, modelos,
+implementadas. T00–T08 tienen una suite ejecutada de 87 pruebas; cubre CLI, modelos,
 contrato, schema, runner, supervisor y collector host aislado (OS, recursos, contexto,
-filesystems, interfaces, procesos, sockets y systemd), incluida una prueba de
-integración del collector dentro del worker acotado. No demuestra discovery integral,
+filesystems, interfaces, procesos, sockets y systemd), y assessment de las dos reglas.
+También incluye una prueba de integración del collector dentro del worker acotado.
+No demuestra discovery integral,
 compatibilidad del manager systemd, rendimiento del scan ni soporte RHEL/WSL.
 Objetivo CI base sin servicios: unitarias + integración local no root en Ubuntu
 24.04, Python 3.12; añadir 3.13 cuando las dependencias resueltas lo permitan.
@@ -24,7 +25,7 @@ WSL2/Linux; import/help no implica compatibilidad de colectores en Windows.
 | C05 carreras | Unidad | NoSuchProcess, PID reutilizado | Omisión limitada, sin vínculo falso |
 | C06 sockets | Unidad | IPv4/6, wildcard, UDP, duplicados, pid null | Normalización y claves correctas; sólo TCP listen/UDP bound |
 | C07 systemd | Unidad | sin ejecutable/runtime, bus caído, salida malformada | unsupported vs collection_error vs permission_denied distintos |
-| C08 reglas | Unidad | FS 89.99/90/95%, total=0; failed/active/inactive | Umbral exacto, dos reglas, negativos sin finding; not_evaluable correcto |
+| C08 reglas | Unidad | FS 89.99/90/95%, total=0; failed/active/inactive | Umbral exacto, dos reglas, negativos sin finding; not_evaluable correcto; cobertura parcial se evalúa por sujeto observable |
 | C09 seguridad | Unidad | canarios en argv/env/Description/stderr, ANSI y symlink | Ningún canario exportado, no shell/sudo, salida privada y terminal saneada |
 | C10 límites | Unidad/integración worker | salida >1 MiB, exceso de records, proceso bloqueado | partial/truncated, deadline <=32 s, RLIMIT_AS efectivo, sin huérfanos ni buffers de comando ilimitados |
 | C11 salida | Integración filesystem | ruta existente, falta permiso, symlink, interrupción | Códigos 1/2/130, archivo anterior intacto, temp limpio, modo 0600 |
