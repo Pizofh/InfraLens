@@ -3,10 +3,11 @@
 ## Estado y presupuesto
 
 Este documento prescribe pruebas futuras para las capacidades todavía no
-implementadas. T00–T08 tienen una suite ejecutada de 87 pruebas; cubre CLI, modelos,
+implementadas. T00–T09 tienen una suite ejecutada de 94 pruebas; cubre CLI, modelos,
 contrato, schema, runner, supervisor y collector host aislado (OS, recursos, contexto,
-filesystems, interfaces, procesos, sockets y systemd), y assessment de las dos reglas.
-También incluye una prueba de integración del collector dentro del worker acotado.
+filesystems, interfaces, procesos, sockets y systemd), assessment de las dos reglas,
+persistencia JSON privada/atómica y resumen terminal saneado. También incluye una
+prueba de integración del collector dentro del worker acotado.
 No demuestra discovery integral,
 compatibilidad del manager systemd, rendimiento del scan ni soporte RHEL/WSL.
 Objetivo CI base sin servicios: unitarias + integración local no root en Ubuntu

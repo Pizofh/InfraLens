@@ -25,10 +25,10 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 ## Estructura objetivo del MVP; implementar por tarea
 
-T00–T08 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
-collectors host, procesos, sockets, systemd aislado y reglas puras de assessment.
-Reporting e integración del flujo completo pertenecen a T09–T10; no adelantar módulos
-de tareas posteriores.
+T00–T09 crearon el paquete base, CLI, modelos/schema, runner, supervisor de workers,
+collectors host, procesos, sockets, systemd aislado, reglas puras de assessment y
+reporting seguro. La integración del flujo completo pertenece a T10; no adelantar
+módulos de tareas posteriores.
 
 ```text
 pyproject.toml
@@ -67,7 +67,9 @@ para dos funciones. Tipos explícitos y funciones pequeñas bastan.
 - `assess(snapshot) -> AssessmentResult`: hallazgos y evaluación por regla
   (triggered/not_triggered/not_evaluable), con referencias de evidencia.
 - `write_snapshot(snapshot, path, overwrite=False)`: valida, serializa UTF-8,
-  redacta errores y publica el resultado de forma atómica con modo 0600.
+  aplica límites de tamaño, crea temporal 0600, evita reemplazo accidental y
+  publica el resultado de forma atómica. `format_summary(snapshot)` sanea controles
+  ANSI de los textos antes de mostrarlos; quien integra CLI decide códigos y errores.
 
 El orquestador genera UUID y tiempo UTC, caracteriza contexto host/namespace,
 ejecuta secuencialmente host, processes, sockets y systemd en workers separados,

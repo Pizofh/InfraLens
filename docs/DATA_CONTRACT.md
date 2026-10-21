@@ -11,6 +11,15 @@ desconocido sin relación inventada.
 JSON UTF-8, sin NaN/Infinity, fechas RFC3339 UTC con Z, bytes enteros no negativos,
 porcentajes derivados y no almacenados como fuente autoritativa.
 
+T09 valida de nuevo el snapshot antes de serializarlo. Cada string del documento se
+limita a 4.096 caracteres y el JSON UTF-8 final a 16 MiB. El escritor crea un
+temporal `0600` en el directorio destino, escribe y sincroniza el contenido antes
+de publicarlo. Sin overwrite usa creación atómica sin reemplazo; con overwrite
+reemplaza atómicamente sólo un archivo regular. Rechaza destino symlink y limpia el
+temporal cuando falla la publicación. Los directorios los administra el usuario y
+no se consideran hostiles. El resumen terminal imprime estado de colectores,
+conteos de evaluaciones y hallazgos; elimina ANSI y controles de los textos.
+
 ## Separar conocimiento de ejecución
 
 No mezclar observación con estado del colector en un solo enum.
