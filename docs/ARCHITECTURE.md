@@ -25,9 +25,9 @@ recibe sólo datos validados; reporting no vuelve a inspeccionar el sistema.
 
 ## Estructura objetivo del MVP; implementar por tarea
 
-T00–T02 crearon sólo el paquete base, CLI, modelos/schema y runner. El resto de
-estos módulos pertenece a las tareas T03–T10 del plan; no adelantar módulos de
-tareas posteriores.
+T00–T03 crearon el paquete base, CLI, modelos/schema, runner y supervisor de workers.
+Los collectors y el flujo completo pertenecen a las tareas T04–T10; no adelantar
+módulos de tareas posteriores.
 
 ```text
 pyproject.toml

@@ -2,19 +2,21 @@
 
 ## Estado y siguiente tarea exacta
 
-T00–T02 ya están implementadas: bootstrap, schema/validación del snapshot y runner
-acotado. `scan` todavía devuelve “not implemented”. La siguiente tarea es **T03**:
-workers con spawn, pipe drenado, deadlines y RLIMIT_AS. Antes, lee
+T00–T03 ya están implementadas: bootstrap, schema/validación del snapshot, runner
+acotado y supervisor de workers. `scan` todavía devuelve “not implemented”; el
+supervisor aún no está conectado a colectores ni al CLI. La siguiente tarea es
+**T04a**: collector de OS, recursos y contexto. Antes, lee
 [brief](PROJECT_BRIEF.md), [MVP](MVP_SPEC.md), [contrato](DATA_CONTRACT.md) y
 [plan](IMPLEMENTATION_PLAN.md). Inspecciona Git status e instrucciones locales.
 
 El entorno usa Python 3.12, uv y lock congelado. Ejecuta `export
-UV_CACHE_DIR=/tmp/uv-infralens-cache`, `uv sync --frozen --extra dev` y verifica
-con pytest/Ruff/build. T02 valida sólo el runner; no implica que exista un collector.
+UV_CACHE_DIR=/tmp/uv-infralens-cache UV_LINK_MODE=copy`, `uv sync --frozen --extra dev`
+y verifica con pytest/Ruff/build. T03 valida el supervisor aislado; todavía no
+existe un collector ni un scan funcional.
 
 ## Orden restante
 
-T03 workers, T04a/b/c host, T05 procesos, T06 sockets, T07 systemd, T08 reglas,
+T04a/b/c host, T05 procesos, T06 sockets, T07 systemd, T08 reglas,
 T09 reporting, T10 integración y T11 CI. Cada tarea incluye pruebas y criterios en
 el plan. Termina una entrega verificable antes de abrir otra; no implementes
 transportes o Docker por adelantado. No solicites confirmación para decisiones ya
@@ -67,10 +69,11 @@ normal es dato del scan, no motivo para pedir elevación.
 
 Las tareas cloud ya están aisladas. Usa el checkout existente en
 `/workspace/InfraLens`; no crees worktrees salvo petición explícita. Python 3.12,
-uv y dependencias congeladas están disponibles. Los checks T00–T02 pasan; no se
-hicieron commits ni pushes. El borrador de configuración guarda instalación y
-contexto de inicio; no hay servicio persistente que arrancar ni credenciales
-necesarias para el flujo local.
+uv y dependencias congeladas están disponibles. Los checks T00–T03 pasan; el
+commit actual está en `main` y el borrador cloud guarda esa referencia. No hay
+servicio persistente que arrancar ni credenciales necesarias para el flujo local.
+El usuario autorizó commits revisables y push a `origin/main` al terminar cada tarea
+validada; no publicar paquetes ni el entorno cloud sin una petición aparte.
 
 Antes de cambiar código en una tarea futura, verifica las instrucciones vigentes.
 Si la tarea sigue siendo exclusivamente onboarding, conserva fuentes/manifiestos/

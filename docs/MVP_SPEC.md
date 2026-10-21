@@ -1,9 +1,10 @@
 # Especificación normativa MVP 0.1
 
 Los MUST de recolección de esta especificación son criterios de aceptación
-pendientes; T00–T02 sólo implementan CLI, contrato y runner. `scan` sigue siendo un
-placeholder. Plataforma objetivo Linux con Python 3.12; primera validación Ubuntu
-24.04. RHEL 9 y WSL2 requieren pruebas explícitas.
+pendientes; T00–T03 implementan CLI, contrato, runner y supervisor de workers, pero
+aún no hay colectores. `scan` sigue siendo un placeholder. Plataforma objetivo Linux
+con Python 3.12; primera validación Ubuntu 24.04. RHEL 9 y WSL2 requieren pruebas
+explícitas.
 
 ## CLI definitiva de esta versión
 

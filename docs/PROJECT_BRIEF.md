@@ -1,8 +1,9 @@
 # InfraLens: propósito y alcance
 
-Estado: MVP en construcción. T00–T02 están implementados: CLI inicial, modelos/schema
-de snapshots y runner acotado. El comando `scan` todavía es un placeholder; los
-colectores y el flujo de inspección no existen. Fecha inicial del diseño: 2026-10-21.
+Estado: MVP en construcción. T00–T03 están implementados: CLI inicial, modelos/schema
+de snapshots, runner acotado y supervisor de workers. El comando `scan` todavía es un
+placeholder; no existen colectores ni el flujo de inspección. Fecha inicial del
+diseño: 2026-10-21.
 
 ## Problema y usuario
 
