@@ -5,9 +5,10 @@
 T00–T11 ya están implementadas: bootstrap, schema/validación del snapshot, runner,
 supervisor de workers, collectors host, procesos, sockets, systemd y reglas puras de
 assessment, reporting JSON seguro, integración CLI, CI y documentación de uso.
-C14 también pasó en GitHub Actions sobre Ubuntu con systemd real. D01 de 0.2 añade
-`load_snapshot`, un lector acotado y compatible con 1.x. La siguiente tarea es D02:
-preflight de scope y contexto para evitar comparar snapshots de ámbitos incompatibles.
+C14 también pasó en GitHub Actions sobre Ubuntu con systemd real. D01 añade
+`load_snapshot`; D02 añade `preflight_comparison` para exigir scope y contexto
+compatibles. La siguiente tarea es D03: definir claves naturales y matching de
+servicios cargados.
 Para cualquier cambio, consulta [brief](PROJECT_BRIEF.md), [MVP](MVP_SPEC.md),
 [contrato](DATA_CONTRACT.md) y [plan](IMPLEMENTATION_PLAN.md). Inspecciona Git status
 e instrucciones locales.
@@ -19,7 +20,7 @@ CI con systemd real y el CLI produce snapshots reales locales.
 
 ## Orden restante
 
-D01 está completo. Seguir D02 → D03 → D04 → D05 para diff conservador; no implementes
+D01 y D02 están completos. Seguir D03 → D04 → D05 para diff conservador; no implementes
 transportes SSH ni Docker por adelantado. No solicites confirmación para decisiones
 ya resueltas en estos documentos.
 

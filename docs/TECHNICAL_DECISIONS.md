@@ -96,6 +96,15 @@ fallan de forma cerrada. Un major futuro exige negociación explícita. El lími
 ambiguas o sin cota. Consecuencia: consumidores pueden retener datos que InfraLens
 aún no entiende sin incluirlos inadvertidamente en una comparación.
 
+## D11 — Preflight conservador para comparación
+
+Antes de comparar, exigir `scope_origin=operator`, `scope_id` idéntico, el mismo
+schema major y contexto de colección conocido e idéntico: uid/euid y namespaces
+pid/net/mnt. Si falta o difiere cualquier valor, rechazar el diff global y devolver
+códigos estables, sin nombres ni datos del host. `boot_id` distinto no bloquea por sí
+solo: permite comparar el mismo scope tras un reinicio. No hay override en 0.2 hasta
+que existan pruebas que justifiquen cómo conservar la advertencia.
+
 ## Capacidades existentes y posición de InfraLens
 
 | Herramienta | Capacidad real relevante | Lo que no resuelve automáticamente | Decisión |

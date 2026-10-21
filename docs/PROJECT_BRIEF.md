@@ -4,8 +4,8 @@ Estado: MVP 0.1 validado en CI. T00–T11 implementan CLI inicial, modelos/schem
 supervisor de workers y recolección aislada de OS, recursos, contexto, filesystems,
 interfaces, procesos, sockets, servicios systemd opcionales, assessment puro y
 reporting seguro, integración de `scan` y CI base. C14 pasó en el runner Ubuntu con
-systemd real. La entrega 0.2 está iniciada con un lector compatible de snapshots 1.x;
-la comparación todavía no forma parte de la CLI.
+systemd real. La entrega 0.2 ya incluye el lector compatible de snapshots 1.x y el
+preflight conservador de scope/contexto; aún no calcula ni presenta diferencias.
 Fecha inicial del diseño: 2026-10-21.
 
 ## Problema y usuario

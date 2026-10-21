@@ -199,6 +199,12 @@ mayor nuevo para eliminar campos, cambiar significados o enums de control. Nuevo
 tipos de entidad y enums requieren negociación de lector: no tratarlos automáticamente
 como adición compatible. Fixture 1.0.0 congelado y pruebas de migración antes de 2.0.
 
+Para diff 0.2, el preflight requiere `scope_origin=operator`, igual `scope_id` y
+valores conocidos e idénticos para `uid`, `euid` y namespaces PID/net/mnt. Un valor
+desconocido o distinto invalida la comparación global; no existe override en esta
+versión. `boot_id` puede cambiar entre reinicios del mismo scope y no es por sí solo
+un bloqueo de comparación.
+
 ## Ejemplo mínimo de cobertura parcial
 
 Ejemplo reducido pero completo del sobre; sólo un filesystem es observable.
