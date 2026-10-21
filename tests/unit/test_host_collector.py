@@ -29,6 +29,8 @@ def _configure_host(monkeypatch, tmp_path: Path, release_text: str) -> None:
         lambda: SimpleNamespace(total=16_000, available=8_000),
     )
     monkeypatch.setattr(host.psutil, "disk_partitions", lambda all=False: [])
+    monkeypatch.setattr(host.psutil, "net_if_addrs", lambda: {})
+    monkeypatch.setattr(host.psutil, "net_if_stats", lambda: {})
 
 
 def test_os_release_parser_handles_quotes_without_evaluating_shell(tmp_path: Path) -> None:
@@ -277,3 +279,187 @@ def test_zero_capacity_is_valid_and_invalid_mount_is_reported(monkeypatch, tmp_p
     assert filesystems[0].attributes.total_bytes == 0
     assert filesystems[0].attributes.used_bytes == 0
     assert any(error.code == "parse_error" for error in result.collector.errors)
+
+
+def test_interfaces_normalize_ip_prefix_and_ipv6_zone(monkeypatch, tmp_path: Path) -> None:
+    import socket
+
+    _configure_host(monkeypatch, tmp_path, "ID=ubuntu\nVERSION_ID=24.04\n")
+    monkeypatch.setattr(
+        host.psutil,
+        "net_if_addrs",
+        lambda: {
+            "eth0": [
+                SimpleNamespace(
+                    family=socket.AF_INET,
+                    address="192.0.2.8",
+                    netmask="255.255.255.0",
+                ),
+                SimpleNamespace(
+                    family=socket.AF_INET6,
+                    address="fe80::1%7",
+                    netmask="ffff:ffff:ffff:ffff::",
+                ),
+                SimpleNamespace(family=getattr(socket, "AF_PACKET", -1), address="aa:bb"),
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        host.psutil,
+        "net_if_stats",
+        lambda: {"eth0": SimpleNamespace(isup=True)},
+    )
+
+    result = host.collect({})
+
+    interface = next(entity for entity in result.entities if entity.kind == "interface")
+    assert interface.attributes.name == "eth0"
+    assert interface.attributes.is_up is True
+    assert [address.model_dump() for address in interface.attributes.addresses] == [
+        {"family": "ipv4", "address": "192.0.2.8", "prefix_length": 24, "scope_id": None},
+        {"family": "ipv6", "address": "fe80::1", "prefix_length": 64, "scope_id": 7},
+    ]
+    interface_evidence = [item for item in result.evidence if item.subject_id == interface.id]
+    assert {item.source.name for item in interface_evidence} == {
+        "psutil.net_if_addrs",
+        "psutil.net_if_stats",
+    }
+    stats_evidence = next(item for item in interface_evidence if item.source.name.endswith("stats"))
+    assert stats_evidence.fields == {"name": "eth0", "is_up": True}
+    assert result.collector.status == "ok"
+
+
+def test_interface_address_failure_preserves_link_state(monkeypatch, tmp_path: Path) -> None:
+    _configure_host(monkeypatch, tmp_path, "ID=ubuntu\nVERSION_ID=24.04\n")
+
+    def denied():
+        raise PermissionError
+
+    monkeypatch.setattr(host.psutil, "net_if_addrs", denied)
+    monkeypatch.setattr(
+        host.psutil,
+        "net_if_stats",
+        lambda: {"eth0": SimpleNamespace(isup=True)},
+    )
+    result = host.collect({})
+
+    interface = next(entity for entity in result.entities if entity.kind == "interface")
+    assert interface.attributes.is_up is True
+    assert interface.attributes.addresses == []
+    assert result.collector.status == "permission_denied"
+    assert result.collector.coverage == "partial"
+    assert any(
+        item.subject_id == interface.id and "addresses" in item.message
+        for item in result.collector.limitations
+    )
+
+
+def test_interface_stats_failure_preserves_addresses(monkeypatch, tmp_path: Path) -> None:
+    import socket
+
+    _configure_host(monkeypatch, tmp_path, "ID=ubuntu\nVERSION_ID=24.04\n")
+    monkeypatch.setattr(
+        host.psutil,
+        "net_if_addrs",
+        lambda: {
+            "eth0": [SimpleNamespace(family=socket.AF_INET, address="192.0.2.4", netmask=None)]
+        },
+    )
+
+    def denied():
+        raise PermissionError
+
+    monkeypatch.setattr(host.psutil, "net_if_stats", denied)
+    result = host.collect({})
+
+    interface = next(entity for entity in result.entities if entity.kind == "interface")
+    assert interface.attributes.is_up is None
+    assert interface.attributes.addresses[0].address == "192.0.2.4"
+    assert result.collector.status == "permission_denied"
+    assert any(
+        item.subject_id == interface.id and "is_up" in item.message
+        for item in result.collector.limitations
+    )
+
+
+def test_unresolved_ipv6_zone_keeps_address_with_scope_limitation(
+    monkeypatch, tmp_path: Path
+) -> None:
+    import socket
+
+    _configure_host(monkeypatch, tmp_path, "ID=ubuntu\nVERSION_ID=24.04\n")
+    monkeypatch.setattr(
+        host.psutil,
+        "net_if_addrs",
+        lambda: {
+            "eth0": [
+                SimpleNamespace(
+                    family=socket.AF_INET6,
+                    address="fe80::1%not-present",
+                    netmask="ffff:ffff:ffff:ffff::",
+                )
+            ]
+        },
+    )
+
+    def missing_index(_: str) -> int:
+        raise OSError
+
+    monkeypatch.setattr(socket, "if_nametoindex", missing_index)
+
+    result = host.collect({})
+
+    interface = next(entity for entity in result.entities if entity.kind == "interface")
+    address = interface.attributes.addresses[0]
+    assert address.address == "fe80::1"
+    assert address.scope_id is None
+    assert result.collector.status == "ok"
+    assert any(
+        item.subject_id == interface.id and "scope_id" in item.message
+        for item in result.collector.limitations
+    )
+
+
+def test_invalid_interface_address_is_omitted_with_partial_coverage(
+    monkeypatch, tmp_path: Path
+) -> None:
+    import socket
+
+    _configure_host(monkeypatch, tmp_path, "ID=ubuntu\nVERSION_ID=24.04\n")
+    monkeypatch.setattr(
+        host.psutil,
+        "net_if_addrs",
+        lambda: {
+            "eth0": [
+                SimpleNamespace(family=socket.AF_INET, address="not-an-ip", netmask="bad-mask")
+            ]
+        },
+    )
+
+    result = host.collect({})
+
+    interface = next(entity for entity in result.entities if entity.kind == "interface")
+    assert interface.attributes.addresses == []
+    assert result.collector.status == "collection_error"
+    assert any(error.operation == "net_if_addrs" for error in result.collector.errors)
+    assert any(item.subject_id == interface.id for item in result.collector.limitations)
+
+
+def test_interface_cap_is_deterministic_and_truncated(monkeypatch, tmp_path: Path) -> None:
+    _configure_host(monkeypatch, tmp_path, "ID=ubuntu\nVERSION_ID=24.04\n")
+    names = [f"eth{index:03d}" for index in reversed(range(host.MAX_INTERFACES + 1))]
+    monkeypatch.setattr(host.psutil, "net_if_addrs", lambda: {name: [] for name in names})
+    monkeypatch.setattr(
+        host.psutil,
+        "net_if_stats",
+        lambda: {name: SimpleNamespace(isup=False) for name in names},
+    )
+
+    result = host.collect({})
+
+    interfaces = [entity for entity in result.entities if entity.kind == "interface"]
+    assert len(interfaces) == host.MAX_INTERFACES
+    assert interfaces[0].attributes.name == "eth000"
+    assert result.collector.truncated is True
+    assert result.collector.coverage == "partial"
+    assert any(item.code == "interface_limit_reached" for item in result.collector.limitations)

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import platform
 import re
 import shlex
-from collections.abc import Callable, Mapping
+import socket
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from itertools import count
 from pathlib import Path
@@ -17,6 +19,7 @@ import psutil
 from pydantic import BaseModel, ConfigDict
 
 from infralens.models import (
+    Address,
     CollectionError,
     Collector,
     Context,
@@ -28,17 +31,20 @@ from infralens.models import (
     Host,
     HostResourcesAttributes,
     HostResourcesEntity,
+    InterfaceAttributes,
+    InterfaceEntity,
     Limitation,
     Namespaces,
 )
 
 MAX_OS_RELEASE_BYTES = 64 * 1024
 MAX_FILESYSTEMS = 256
+MAX_INTERFACES = 256
 OS_RELEASE_PATHS = (Path("/etc/os-release"), Path("/usr/lib/os-release"))
 BOOT_ID_PATH = Path("/proc/sys/kernel/random/boot_id")
 HOST_SCOPE = (
     "OS identity, kernel, CPU/memory, UID/EUID, pid/net/mnt namespaces, and up to 256 "
-    "filesystems returned by psutil.disk_partitions(all=False)"
+    "filesystems returned by psutil.disk_partitions(all=False), and up to 256 interfaces"
 )
 _OS_RELEASE_KEY = re.compile(r"[A-Z][A-Z0-9_]*\Z")
 _BOOT_ID = re.compile(
@@ -205,6 +211,17 @@ def collect(_context: Mapping[str, object]) -> HostCollectionResult:
     evidence.extend(filesystem_evidence)
     errors.extend(filesystem_errors)
     limitations.extend(filesystem_limitations)
+    (
+        interface_entities,
+        interface_evidence,
+        interface_errors,
+        interface_limitations,
+        interfaces_truncated,
+    ) = _collect_interfaces(evidence_ids)
+    entities.extend(interface_entities)
+    evidence.extend(interface_evidence)
+    errors.extend(interface_errors)
+    limitations.extend(interface_limitations)
     all_limitations = [*limitations, *context_limitations]
     if not evidence and not errors:
         errors.append(_error("io_error", "read_host_resources"))
@@ -218,6 +235,7 @@ def collect(_context: Mapping[str, object]) -> HostCollectionResult:
         or any(item.code != "os_release_fallback" for item in limitations)
         or context_limitations
         or truncated
+        or interfaces_truncated
     ):
         coverage = "partial"
     else:
@@ -234,7 +252,7 @@ def collect(_context: Mapping[str, object]) -> HostCollectionResult:
         evidence_ids=[item.id for item in evidence],
         errors=errors,
         limitations=limitations,
-        truncated=truncated,
+        truncated=truncated or interfaces_truncated,
     )
     return HostCollectionResult(
         host=host,
@@ -433,7 +451,7 @@ def _read_memory() -> tuple[int | None, int | None, CollectionError | None]:
 
 
 def _collect_filesystems(
-    evidence_ids,
+    evidence_ids: Iterator[int],
 ) -> tuple[list[FilesystemEntity], list[Evidence], list[CollectionError], list[Limitation], bool]:
     errors: list[CollectionError] = []
     limitations: list[Limitation] = []
@@ -469,16 +487,14 @@ def _collect_filesystems(
         )
 
     for partition in partition_rows:
-        values = tuple(
-            _bounded_fs_string(getattr(partition, name, None))
-            for name in ("device", "mountpoint", "fstype")
-        )
-        if any(value is None for value in values):
+        device = _bounded_fs_string(getattr(partition, "device", None))
+        mountpoint = _bounded_fs_string(getattr(partition, "mountpoint", None))
+        fs_type = _bounded_fs_string(getattr(partition, "fstype", None))
+        if device is None or mountpoint is None or fs_type is None:
             errors.append(_filesystem_error("parse_error", "disk_partitions"))
             limitations.append(_filesystem_limitation("filesystem identity", None))
             continue
-        device, mountpoint, fs_type = values
-        valid_partitions.append((device, mountpoint, fs_type))  # type: ignore[arg-type]
+        valid_partitions.append((device, mountpoint, fs_type))
 
     valid_partitions.sort(key=lambda item: (item[1], item[0], item[2]))
     truncated = len(valid_partitions) > MAX_FILESYSTEMS
@@ -612,6 +628,263 @@ def _filesystem_limitation(field_name: str, subject_id: str | None) -> Limitatio
         code="filesystem_field_unavailable",
         message=f"Filesystem field {field_name} is unavailable or invalid.",
         subject_id=subject_id,
+    )
+
+
+def _collect_interfaces(
+    evidence_ids: Iterator[int],
+) -> tuple[list[InterfaceEntity], list[Evidence], list[CollectionError], list[Limitation], bool]:
+    errors: list[CollectionError] = []
+    limitations: list[Limitation] = []
+    addresses_by_name: dict[str, list[object]] = {}
+    stats_by_name: dict[str, object] = {}
+    addresses_available = True
+
+    try:
+        address_result = psutil.net_if_addrs()
+        if not isinstance(address_result, Mapping):
+            raise ValueError
+        addresses_by_name = dict(address_result)
+    except (psutil.AccessDenied, PermissionError):
+        addresses_available = False
+        errors.append(_interface_error("permission_denied", "net_if_addrs"))
+    except (OSError, psutil.Error, ValueError, TypeError):
+        addresses_available = False
+        errors.append(_interface_error("io_error", "net_if_addrs"))
+
+    try:
+        stats_result = psutil.net_if_stats()
+        if not isinstance(stats_result, Mapping):
+            raise ValueError
+        stats_by_name = dict(stats_result)
+    except (psutil.AccessDenied, PermissionError):
+        errors.append(_interface_error("permission_denied", "net_if_stats"))
+    except (OSError, psutil.Error, ValueError, TypeError):
+        errors.append(_interface_error("io_error", "net_if_stats"))
+
+    normalized_addresses: dict[str, list[Address]] = {}
+    field_issues: dict[str, list[str]] = {}
+    valid_names: set[str] = set()
+    for raw_name in set(addresses_by_name) | set(stats_by_name):
+        name = _bounded_interface_name(raw_name)
+        if name is None:
+            errors.append(_interface_error("parse_error", "net_if_addrs"))
+            limitations.append(_interface_limitation("interface name", None))
+            continue
+        valid_names.add(name)
+        normalized_addresses[name] = []
+        raw_addresses = addresses_by_name.get(raw_name, [])
+        if not isinstance(raw_addresses, Sequence) or isinstance(raw_addresses, (str, bytes)):
+            raw_addresses = []
+            errors.append(_interface_error("parse_error", "net_if_addrs"))
+            field_issues.setdefault(name, []).append("addresses")
+        for item in raw_addresses:
+            family = getattr(item, "family", None)
+            if family not in (socket.AF_INET, socket.AF_INET6):
+                continue
+            address, invalid = _normalize_interface_address(
+                family,
+                getattr(item, "address", None),
+                getattr(item, "netmask", None),
+                name,
+            )
+            if invalid:
+                errors.append(_interface_error("parse_error", "net_if_addrs"))
+                field_issues.setdefault(name, []).append("address or prefix")
+            if address is not None and address not in normalized_addresses[name]:
+                normalized_addresses[name].append(address)
+                if address.prefix_length is None:
+                    field_issues.setdefault(name, []).append("prefix_length")
+                if (
+                    address.family == "ipv6"
+                    and ipaddress.IPv6Address(address.address).is_link_local
+                ):
+                    if address.scope_id is None:
+                        field_issues.setdefault(name, []).append("scope_id")
+        normalized_addresses[name].sort(
+            key=lambda item: (
+                item.family,
+                item.address,
+                item.prefix_length or -1,
+                item.scope_id or -1,
+            )
+        )
+
+    ordered_names = sorted(valid_names)
+    truncated = len(ordered_names) > MAX_INTERFACES
+    if truncated:
+        ordered_names = ordered_names[:MAX_INTERFACES]
+        limitations.append(
+            Limitation(
+                code="interface_limit_reached",
+                message=f"Interface collection was limited to {MAX_INTERFACES} interfaces.",
+            )
+        )
+
+    entities: list[InterfaceEntity] = []
+    evidence: list[Evidence] = []
+    for index, name in enumerate(ordered_names, start=1):
+        entity_id = f"interface:{index}"
+        limitations.extend(
+            _interface_limitation(field_name, entity_id)
+            for field_name in field_issues.get(name, [])
+        )
+        raw_stats = stats_by_name.get(name)
+        is_up: bool | None = None
+        if raw_stats is not None:
+            raw_is_up = getattr(raw_stats, "isup", None)
+            if isinstance(raw_is_up, bool):
+                is_up = raw_is_up
+            else:
+                errors.append(_interface_error("parse_error", "net_if_stats"))
+                limitations.append(_interface_limitation("is_up", entity_id))
+        else:
+            limitations.append(_interface_limitation("is_up", entity_id))
+
+        interface_addresses = normalized_addresses.get(name, [])
+        if not addresses_available:
+            limitations.append(_interface_limitation("addresses", entity_id))
+
+        attributes = InterfaceAttributes(name=name, is_up=is_up, addresses=interface_addresses)
+        if name in addresses_by_name:
+            address_evidence = _interface_evidence(
+                "psutil.net_if_addrs", entity_id, {"name": name}, next(evidence_ids)
+            )
+            evidence.append(address_evidence)
+        else:
+            address_evidence = None
+        if raw_stats is not None:
+            stats_fields: dict[str, str | bool] = {"name": name}
+            if is_up is not None:
+                stats_fields["is_up"] = is_up
+            stats_evidence = _interface_evidence(
+                "psutil.net_if_stats",
+                entity_id,
+                stats_fields,
+                next(evidence_ids),
+            )
+            evidence.append(stats_evidence)
+        else:
+            stats_evidence = None
+        entity_evidence_ids = [
+            item.id for item in (address_evidence, stats_evidence) if item is not None
+        ]
+        if not entity_evidence_ids:
+            continue
+        entities.append(
+            InterfaceEntity(
+                id=entity_id,
+                kind="interface",
+                attributes=attributes,
+                evidence_ids=entity_evidence_ids,
+            )
+        )
+
+    return entities, evidence, errors, limitations, truncated
+
+
+def _normalize_interface_address(
+    family: object, raw_address: object, raw_netmask: object, interface_name: str
+) -> tuple[Address | None, bool]:
+    if not isinstance(raw_address, str) or len(raw_address) > 256:
+        return None, True
+    address_text, separator, zone = raw_address.partition("%")
+    try:
+        parsed = ipaddress.ip_address(address_text)
+    except ValueError:
+        return None, True
+    expected_version = 4 if family == socket.AF_INET else 6
+    if parsed.version != expected_version:
+        return None, True
+    if parsed.version == 4 and separator:
+        return None, True
+
+    invalid = False
+    prefix_length = None
+    if raw_netmask is not None:
+        if not isinstance(raw_netmask, str):
+            invalid = True
+        else:
+            try:
+                if raw_netmask.isdecimal():
+                    prefix_length = int(raw_netmask)
+                    if prefix_length > parsed.max_prefixlen:
+                        raise ValueError
+                else:
+                    mask = ipaddress.ip_address(raw_netmask)
+                    bits = f"{int(mask):0{parsed.max_prefixlen}b}"
+                    if mask.version != parsed.version or "01" in bits:
+                        raise ValueError
+                    prefix_length = bits.count("1")
+            except ValueError:
+                invalid = True
+
+    scope_id = None
+    if parsed.version == 6 and separator:
+        if zone.isdecimal():
+            scope_id = int(zone)
+        else:
+            try:
+                scope_id = socket.if_nametoindex(zone)
+            except (OSError, ValueError):
+                scope_id = None
+    return (
+        Address(
+            family="ipv4" if parsed.version == 4 else "ipv6",
+            address=str(parsed),
+            prefix_length=prefix_length,
+            scope_id=scope_id,
+        ),
+        invalid,
+    )
+
+
+def _bounded_interface_name(value: object) -> str | None:
+    if (
+        not isinstance(value, str)
+        or not value
+        or len(value) > 256
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        return None
+    return value
+
+
+def _interface_error(
+    code: Literal["permission_denied", "io_error", "parse_error"],
+    operation: Literal["net_if_addrs", "net_if_stats"],
+) -> CollectionError:
+    message = {
+        "permission_denied": "Permission denied while reading interface metadata.",
+        "io_error": "Interface metadata could not be read.",
+        "parse_error": "Interface metadata did not match the expected format.",
+    }[code]
+    return CollectionError(code=code, operation=operation, message=message)
+
+
+def _interface_limitation(field_name: str, subject_id: str | None) -> Limitation:
+    return Limitation(
+        code="interface_field_unavailable",
+        message=f"Interface field {field_name} is unavailable or invalid.",
+        subject_id=subject_id,
+    )
+
+
+def _interface_evidence(
+    source_name: Literal["psutil.net_if_addrs", "psutil.net_if_stats"],
+    subject_id: str,
+    fields: dict[str, str | bool],
+    evidence_number: int,
+) -> Evidence:
+    return Evidence(
+        id=f"e:{evidence_number}",
+        collector_id="host",
+        collected_at=datetime.now(UTC),
+        source=EvidenceSource(type="api", name=source_name),
+        subject_id=subject_id,
+        claim="observed",
+        fields=fields,
+        limitations=[],
     )
 
 

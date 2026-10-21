@@ -87,6 +87,13 @@ deterministas y limita el resultado a 256. Por cada filesystem hay evidencia de
 total/used/free. Un fallo de usage conserva la entidad y la evidencia de identidad,
 con capacidades nulas y limitaciones por campo. Superar el máximo marca truncated y
 cobertura parcial; una capacidad total igual a cero es válida y no implica división.
+T04c reúne nombres desde `net_if_addrs` y `net_if_stats`, ordena y limita a 256.
+Sólo conserva IPv4/IPv6; omite direcciones de enlace/MAC. Direcciones se canonizan,
+netmasks contiguas se convierten a prefijo y zonas IPv6 numéricas se guardan como
+`scope_id` (las zonas con nombre se resuelven al índice de interfaz cuando el sistema
+lo permite). Cada fuente genera evidencia por interfaz. Si una fuente falla, se
+conservan los datos de la otra y se marca cobertura parcial; direcciones o estado no
+observados llevan limitación explícita.
 
 IDs de entidades y evidencia no son identidades entre snapshots. Un proceso se
 identifica sólo durante el scan por pid+started_at+contexto de arranque; sin tiempo
