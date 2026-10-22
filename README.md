@@ -24,3 +24,9 @@ Use `--fail-on-partial` to return status 3 after saving when any collector is pa
 unsupported, or otherwise incomplete. Snapshots may contain hostnames, addresses,
 process names, mountpoints, and service names; review them before sharing. Systemd
 support and RHEL/WSL compatibility require separate validation.
+
+## Design and documentation
+
+- [Portfolio architecture overview](docs/PORTFOLIO_OVERVIEW.md): components, evidence flow, MVP status and safe demo.
+- [Technical architecture](docs/ARCHITECTURE.md) and [data contract](docs/DATA_CONTRACT.md): detailed internal design and snapshot semantics.
+- [Testing strategy](docs/TEST_STRATEGY.md): validation scope and known environmental limitations.
